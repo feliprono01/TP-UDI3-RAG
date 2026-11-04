@@ -1,0 +1,1263 @@
+<title>Clase 8 · El RAG se muda</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,400;0,600;0,800;1,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: guía de laboratorio — índice de pasos fijo a la izquierda, una columna de trabajo, cajas por rol (consigna, código, verificación, cuaderno) */
+:root {
+  --tinta: #1F1B16;
+  --marron: #6B4E2E;
+  --arena: #F4EFE6;
+  --papel: #FBF9F5;
+  --linea: #E2D9CA;
+  --suave: #6E6458;
+  --codigo-bg: #2A241D;
+  --codigo-fg: #EFE7DA;
+  --codigo-com: #A8997F;
+  --codigo-str: #D9B98A;
+  --codigo-kw: #E8A87C;
+  --ok: #3F6B3A;
+  --ok-bg: #E7EFE1;
+  --alerta: #9A3B2E;
+  --alerta-bg: #F6E4DF;
+  --cuaderno: #2F5470;
+  --cuaderno-bg: #E3ECF2;
+  --todo: #8A5A00;
+  --todo-bg: #FBEFD5;
+  --f-cuerpo: "Public Sans", "Segoe UI", system-ui, sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --tinta: #EDE6DA; --marron: #D2A877; --arena: #2A241D; --papel: #1A1612; --linea: #3B332A; --suave: #A89C8C;
+  --codigo-bg: #110E0B; --codigo-fg: #EFE7DA; --codigo-com: #8C7F6A; --codigo-str: #D9B98A; --codigo-kw: #E8A87C;
+  --ok: #9CC795; --ok-bg: #1F2B1D; --alerta: #E59A8C; --alerta-bg: #33201C; --cuaderno: #9CC0DC; --cuaderno-bg: #1A2630;
+  --todo: #E7BE6A; --todo-bg: #2E2614; color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --tinta: #EDE6DA; --marron: #D2A877; --arena: #2A241D; --papel: #1A1612; --linea: #3B332A; --suave: #A89C8C;
+  --codigo-bg: #110E0B; --codigo-fg: #EFE7DA; --codigo-com: #8C7F6A; --codigo-str: #D9B98A; --codigo-kw: #E8A87C;
+  --ok: #9CC795; --ok-bg: #1F2B1D; --alerta: #E59A8C; --alerta-bg: #33201C; --cuaderno: #9CC0DC; --cuaderno-bg: #1A2630;
+  --todo: #E7BE6A; --todo-bg: #2E2614; color-scheme: dark; }
+
+* { box-sizing: border-box; }
+body { background: var(--papel); color: var(--tinta); font-family: var(--f-cuerpo); font-size: 16px; line-height: 1.6; }
+.envoltura { display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: 48px; max-width: 1120px; margin: 0 auto; padding: 32px 24px 80px; }
+@media (max-width: 860px) { .envoltura { grid-template-columns: minmax(0,1fr); gap: 0; padding: 16px 16px 64px; } .indice { display: none; } }
+
+/* índice lateral */
+.indice { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 24px); align-self: start; font-size: 14px; }
+.indice .marca { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--suave); margin-bottom: 6px; }
+.indice ol { list-style: none; padding: 0; margin: 12px 0 0; display: grid; gap: 2px; }
+.indice a { display: flex; gap: 10px; align-items: baseline; color: var(--tinta); text-decoration: none; padding: 5px 8px; border-radius: 6px; }
+.indice a:hover { background: var(--arena); }
+.indice a .n { font-family: var(--f-mono); font-size: 12px; color: var(--suave); min-width: 1.6em; }
+.indice a.hecho .n { color: var(--ok); }
+.indice a.hecho .n::before { content: "✓"; }
+.indice a.hecho .n span { display: none; }
+.barra { height: 6px; background: var(--linea); border-radius: 3px; overflow: hidden; margin-top: 8px; }
+.barra i { display: block; height: 100%; width: 0; background: var(--marron); transition: width .3s; }
+.progreso-txt { font-size: 13px; color: var(--suave); margin-top: 6px; font-variant-numeric: tabular-nums; }
+
+/* cabecera */
+header.portada { border-bottom: 2px solid var(--tinta); padding-bottom: 24px; margin-bottom: 8px; }
+.eyebrow { font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--marron); font-weight: 600; }
+h1 { font-size: clamp(30px, 5vw, 44px); line-height: 1.1; margin: 8px 0 12px; font-weight: 800; letter-spacing: -.02em; text-wrap: balance; }
+.bajada { font-size: 18px; color: var(--suave); max-width: 62ch; margin: 0; }
+.controles { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; margin-top: 20px; font-size: 14px; }
+.selector { display: inline-flex; border: 1px solid var(--linea); border-radius: 8px; overflow: hidden; }
+.selector button { font: inherit; font-size: 14px; border: 0; background: transparent; color: var(--tinta); padding: 7px 14px; cursor: pointer; }
+.selector button[aria-pressed="true"] { background: var(--tinta); color: var(--papel); }
+.selector button:focus-visible, button:focus-visible, a:focus-visible, input:focus-visible, summary:focus-visible { outline: 2px solid var(--marron); outline-offset: 2px; }
+
+/* arquitectura */
+.flujo { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 24px 0 8px; font-family: var(--f-mono); font-size: 13px; }
+.flujo span { background: var(--arena); border: 1px solid var(--linea); padding: 6px 10px; border-radius: 6px; }
+.flujo span.nuevo { border-color: var(--marron); color: var(--marron); font-weight: 600; }
+.flujo b { color: var(--suave); font-weight: 400; }
+.leyenda { font-size: 13px; color: var(--suave); }
+
+/* pasos */
+section.paso { padding: 40px 0 8px; border-bottom: 1px solid var(--linea); scroll-margin-top: 16px; }
+.paso-cab { display: flex; gap: 16px; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; }
+.paso-cab h2 { font-size: 26px; line-height: 1.2; margin: 0; letter-spacing: -.01em; text-wrap: balance; display: flex; gap: 14px; align-items: baseline; min-width: 0; }
+.paso-cab h2 .num { font-family: var(--f-mono); font-size: 15px; color: var(--marron); font-weight: 600; flex: none; }
+.listo { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; border: 1px solid var(--linea); border-radius: 999px; padding: 6px 14px 6px 10px; cursor: pointer; user-select: none; background: var(--papel); }
+.listo input { width: 18px; height: 18px; accent-color: var(--ok); margin: 0; }
+.listo:has(input:checked) { border-color: var(--ok); color: var(--ok); background: var(--ok-bg); }
+.paso p, .paso li { max-width: 68ch; }
+.paso h3 { font-size: 17px; margin: 28px 0 8px; }
+code.in { font-family: var(--f-mono); font-size: .88em; background: var(--arena); padding: 1px 5px; border-radius: 4px; }
+
+/* bloques de código */
+.codigo { margin: 16px 0; border-radius: 10px; overflow: hidden; background: var(--codigo-bg); }
+.codigo .cab { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 8px 12px 8px 16px; font-size: 13px; color: var(--codigo-com); border-bottom: 1px solid rgba(255,255,255,.08); }
+.codigo .cab .archivo { font-family: var(--f-mono); color: var(--codigo-fg); }
+.codigo .cab .tipo { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; margin-left: 10px; padding: 2px 7px; border-radius: 4px; background: rgba(255,255,255,.08); }
+.codigo .cab .tipo.todo { background: #E7BE6A; color: #2A241D; }
+.codigo pre { margin: 0; padding: 14px 16px; overflow-x: auto; font-family: var(--f-mono); font-size: 13.5px; line-height: 1.55; color: var(--codigo-fg); }
+.codigo .c { color: var(--codigo-com); font-style: italic; }
+.codigo .s { color: var(--codigo-str); }
+.codigo .k { color: var(--codigo-kw); }
+.codigo .t { background: rgba(231,190,106,.18); color: #F3D28F; font-style: normal; font-weight: 600; }
+.copiar { font: inherit; font-size: 12px; background: transparent; border: 1px solid rgba(255,255,255,.2); color: var(--codigo-fg); border-radius: 6px; padding: 4px 10px; cursor: pointer; }
+.copiar:hover { background: rgba(255,255,255,.08); }
+.copiar.ok { border-color: #9CC795; color: #9CC795; }
+[data-os-show] { display: none; }
+body[data-os="win"] [data-os-show="win"], body[data-os="unix"] [data-os-show="unix"] { display: block; }
+[data-prov-show] { display: none; }
+body[data-prov="gemini"] [data-prov-show="gemini"], body[data-prov="openai"] [data-prov-show="openai"], body[data-prov="ollama"] [data-prov-show="ollama"] { display: block; }
+
+/* cajas por rol */
+.caja { border-radius: 10px; padding: 14px 18px; margin: 16px 0; border: 1px solid; }
+.caja .rot { font-size: 11px; letter-spacing: .1em; text-transform: uppercase; font-weight: 800; display: block; margin-bottom: 4px; }
+.caja p { margin: 6px 0; }
+.caja ul, .caja ol { margin: 6px 0; padding-left: 22px; }
+.caja.verif { background: var(--ok-bg); border-color: color-mix(in srgb, var(--ok) 35%, transparent); }
+.caja.verif .rot { color: var(--ok); }
+.caja.atencion { background: var(--alerta-bg); border-color: color-mix(in srgb, var(--alerta) 35%, transparent); }
+.caja.atencion .rot { color: var(--alerta); }
+.caja.cuaderno { background: var(--cuaderno-bg); border-color: color-mix(in srgb, var(--cuaderno) 35%, transparent); }
+.caja.cuaderno .rot { color: var(--cuaderno); }
+.caja.espec { background: var(--arena); border-color: var(--linea); }
+.caja.espec .rot { color: var(--marron); }
+.caja.espec dl { display: grid; grid-template-columns: max-content minmax(0,1fr); gap: 4px 14px; margin: 8px 0 0; }
+.caja.espec dt { font-weight: 600; }
+.caja.espec dd { margin: 0; }
+@media (max-width: 520px) { .caja.espec dl { grid-template-columns: minmax(0,1fr); } .caja.espec dd { margin-bottom: 6px; } }
+.caja.todo-caja { background: var(--todo-bg); border-color: color-mix(in srgb, var(--todo) 35%, transparent); }
+.caja.todo-caja .rot { color: var(--todo); }
+
+/* tablas de cuaderno */
+.tabla-scroll { overflow-x: auto; margin: 12px 0; }
+table { border-collapse: collapse; width: 100%; font-size: 14px; min-width: 560px; }
+th, td { border: 1px solid var(--linea); padding: 8px 10px; text-align: left; vertical-align: top; }
+th { background: var(--arena); font-weight: 600; }
+td.vacio { height: 34px; }
+
+/* si algo falla */
+details.falla { border: 1px solid var(--linea); border-radius: 10px; margin: 16px 0; background: var(--papel); }
+details.falla summary { cursor: pointer; padding: 10px 16px; font-weight: 600; font-size: 15px; color: var(--alerta); }
+details.falla .dentro { padding: 0 16px 12px; }
+details.falla dl { margin: 0; display: grid; gap: 10px; }
+details.falla dt { font-family: var(--f-mono); font-size: 13px; background: var(--arena); padding: 4px 8px; border-radius: 4px; overflow-wrap: anywhere; }
+details.falla dd { margin: 4px 0 0; font-size: 15px; }
+
+/* widget coseno */
+.widget { display: grid; grid-template-columns: minmax(0, 260px) minmax(0, 1fr); gap: 24px; align-items: center; background: var(--arena); border: 1px solid var(--linea); border-radius: 12px; padding: 20px; margin: 16px 0; }
+@media (max-width: 620px) { .widget { grid-template-columns: minmax(0,1fr); } }
+.widget svg { width: 100%; max-width: 260px; height: auto; display: block; margin: 0 auto; }
+.widget .ctrl { display: grid; gap: 12px; font-size: 14px; }
+.widget label { display: grid; gap: 4px; }
+.widget input[type=range] { width: 100%; accent-color: var(--marron); }
+.widget .valor { font-family: var(--f-mono); font-size: 28px; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--marron); }
+.widget .lectura { font-size: 14px; color: var(--suave); min-height: 1.5em; }
+
+/* pista y solución plegables */
+details.solucion { margin: 10px 0; border: 1px solid color-mix(in srgb, var(--todo) 40%, transparent); border-radius: 10px; background: var(--todo-bg); }
+details.solucion summary { cursor: pointer; padding: 9px 16px; font-weight: 600; font-size: 15px; color: var(--todo); }
+details.solucion .dentro { padding: 0 16px 12px; }
+details.solucion .dentro p { margin: 4px 0 8px; max-width: 68ch; }
+details.solucion .aviso { font-size: 14px; color: var(--suave); }
+details.solucion .codigo { margin: 8px 0 4px; }
+
+/* mapa del proyecto */
+section.mapa { padding: 40px 0 16px; border-bottom: 1px solid var(--linea); scroll-margin-top: 16px; }
+section.mapa h2 { font-size: 26px; margin: 0 0 8px; letter-spacing: -.01em; }
+section.mapa h3 { font-size: 17px; margin: 28px 0 8px; }
+section.mapa p { max-width: 68ch; }
+.arbol { background: var(--arena); border: 1px solid var(--linea); border-radius: 10px; overflow-x: auto; margin: 16px 0; }
+.arbol pre { margin: 0; padding: 16px 18px; font-family: var(--f-mono); font-size: 13.5px; line-height: 1.6; color: var(--suave); }
+.arbol b { color: var(--tinta); font-weight: 600; }
+.arbol .dir { color: var(--marron); font-weight: 600; }
+.arbol i { font-style: normal; color: var(--suave); }
+.arbol u { text-decoration: none; color: var(--marron); font-size: 12px; }
+.arbol em { font-style: normal; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; background: var(--todo-bg); color: var(--todo); padding: 1px 6px; border-radius: 4px; }
+.arbol .gris { color: var(--suave); }
+.tipos { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 700px) { .tipos { grid-template-columns: minmax(0,1fr); } }
+.tipo-arch { border: 1px solid var(--linea); border-radius: 10px; padding: 12px 14px; }
+.tipo-arch .et { font-size: 11px; letter-spacing: .1em; text-transform: uppercase; font-weight: 800; color: var(--marron); }
+.tipo-arch p { margin: 6px 0 0; font-size: 15px; }
+.ir-mapa { display: block; margin: 14px 0 -4px; padding: 5px 8px; font-size: 14px; color: var(--marron); text-decoration: none; border-radius: 6px; }
+.ir-mapa:hover { background: var(--arena); }
+
+/* teoría plegable */
+details.teoria { margin: 18px 0; border-top: 1px dashed var(--marron); border-bottom: 1px dashed var(--marron); }
+details.teoria summary { cursor: pointer; list-style: none; display: flex; align-items: center; gap: 10px; padding: 10px 2px; font-weight: 600; font-size: 15px; color: var(--marron); }
+details.teoria summary::-webkit-details-marker { display: none; }
+details.teoria summary::before { content: "+"; font-family: var(--f-mono); width: 20px; height: 20px; display: inline-grid; place-items: center; border: 1px solid var(--marron); border-radius: 4px; font-size: 14px; flex: none; }
+details.teoria[open] summary::before { content: "−"; }
+details.teoria summary { flex-wrap: wrap; row-gap: 0; }
+details.teoria summary .cuando { font-weight: 400; font-size: 13px; color: var(--suave); flex-basis: 100%; padding-left: 30px; }
+details.teoria .dentro { padding: 2px 2px 16px; }
+details.teoria .dentro p { margin: 8px 0; }
+details.teoria .dentro h4 { font-size: 15px; margin: 18px 0 4px; }
+.mini-tabla { overflow-x: auto; margin: 10px 0; }
+.mini-tabla table { min-width: 0; font-size: 14px; }
+.cita { margin: 10px 0; padding: 8px 14px; background: var(--arena); border-radius: 6px; font-style: italic; }
+.cita small { display: block; font-style: normal; color: var(--suave); margin-top: 4px; }
+.boton-teoria { font: inherit; font-size: 14px; border: 1px solid var(--marron); color: var(--marron); background: transparent; border-radius: 8px; padding: 7px 14px; cursor: pointer; }
+.boton-teoria[aria-pressed="true"] { background: var(--marron); color: var(--papel); }
+.glosario dl { display: grid; grid-template-columns: max-content minmax(0,1fr); gap: 6px 16px; margin: 8px 0; font-size: 15px; }
+.glosario dt { font-weight: 600; color: var(--tinta); }
+.glosario dd { margin: 0; color: var(--tinta); }
+@media (max-width: 520px) { .glosario dl { grid-template-columns: minmax(0,1fr); } .glosario dd { margin-bottom: 6px; } }
+
+footer.cierre { margin-top: 48px; padding-top: 24px; border-top: 2px solid var(--tinta); font-size: 14px; color: var(--suave); }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; scroll-behavior: auto !important; } }
+html { scroll-behavior: smooth; }
+
+:root { box-sizing: border-box; padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+html { scroll-padding-top: env(safe-area-inset-top, 0px); }
+body { margin: 0; }
+/* widget umbral */
+.widget.umbral { grid-template-columns: minmax(0, 1fr); }
+.widget.umbral svg { max-width: 100%; }
+.widget.umbral .cuentas { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.widget.umbral .cuentas > div { display: grid; gap: 2px; }
+.widget.umbral .leyenda-puntos { font-size: 14px; color: var(--suave); }
+.p-esta { color: var(--marron); } .p-no { color: var(--tinta); }
+@media (max-width: 520px) { .widget.umbral .cuentas { grid-template-columns: minmax(0,1fr); } }
+
+/* widget hnsw */
+.widget.hnsw { grid-template-columns: minmax(0, 1fr); }
+.widget.hnsw svg { max-width: 100%; cursor: crosshair; touch-action: manipulation; }
+.widget.hnsw .cuentas { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.widget.hnsw .cuentas > div { display: grid; gap: 2px; }
+.widget.hnsw .leyenda-puntos { font-size: 14px; color: var(--suave); }
+@media (max-width: 520px) { .widget.hnsw .cuentas { grid-template-columns: minmax(0,1fr); } }
+.caja ul { margin: 6px 0; }
+</style>
+<div class="envoltura">
+<nav class="indice" aria-label="Pasos">
+  <div class="marca">Clase 8 · Hacelo vos</div>
+  <div class="barra" aria-hidden="true"><i id="barra"></i></div>
+  <div class="progreso-txt" id="progresoTxt">0 de 12 pasos</div>
+  <a class="ir-mapa" href="#mapa">Cómo queda el proyecto</a>
+  <ol id="listaIndice"></ol>
+</nav>
+
+<main>
+<header class="portada">
+  <div class="eyebrow">Desarrollo con IA · Clase 8 · Guía de trabajo</div>
+  <h1>El RAG se muda</h1>
+  <p class="bajada">Hoy tu sistema cambia de casa tres veces: los vectores pasan de un archivo JSON a una base de datos, el modelo de embeddings pasa de la nube a tu compu, y el reglamento se cambia por tu propio corpus. Seguí los pasos en orden, en una carpeta nueva. Al final tenés un RAG sobre tus documentos, guardado en Postgres, que sabe decir que no.</p>
+  <div class="controles">
+    <span>Tu sistema:</span>
+    <div class="selector" role="group" aria-label="Sistema operativo">
+      <button type="button" id="osWin" aria-pressed="true">Windows</button>
+      <button type="button" id="osUnix" aria-pressed="false">Mac / Linux</button>
+    </div>
+    <button type="button" class="boton-teoria" id="botonTeoria" aria-pressed="false">Mostrar toda la teoría</button>
+  </div>
+  <div class="flujo" aria-label="Arquitectura del sistema">
+    <span class="nuevo">tu corpus</span><b>→</b><span class="nuevo">trocear por marca</span><b>→</b><span class="nuevo">embeddings en Ollama</span><b>→</b><span class="nuevo">tabla en Postgres</span><b>→</b><span class="nuevo">búsqueda en SQL</span><b>→</b><span>umbral</span><b>→</b><span>prompt</span><b>→</b><span>modelo de Google</span>
+  </div>
+  <div class="leyenda">En marrón, lo que cambia hoy. El umbral, el prompt y la respuesta vienen de la clase 7.</div>
+</header>
+
+<!-- MAPA DEL PROYECTO -->
+<section class="mapa" id="mapa">
+  <h2>Cómo queda el proyecto</h2>
+  <p>Es una carpeta nueva, <code class="in">rag-propio</code>, al lado de la <code class="in">rag-reglamento</code> de las clases 6 y 7. Algunos archivos se copian de allá, otros son nuevos. Cada uno aparece en el paso que indica.</p>
+  <div class="arbol" role="img" aria-label="Árbol de archivos del proyecto"><pre><span class="dir">rag-propio/</span>
+│
+├── <b>.env</b>               <i>Ollama, Google y la base · secreto</i>        <u>paso 3</u>
+├── <b>.gitignore</b>         <i>ignora .env y node_modules</i>               <u>paso 1</u>
+├── <b>package.json</b>       <i>lo crea npm</i>                              <u>paso 1</u>
+├── <span class="dir">node_modules/</span>      <i>lo crea npm · no se toca</i>                 <u>paso 1</u>
+├── <span class="dir">corpus/</span>            <i>tus archivos .txt y .md</i>                  <u>paso 1</u>
+├── <b>prompt.txt</b>         <i>de la clase 7, adaptado a tu tema</i>        <u>paso 10</u>
+├── <b>esquema.sql</b>        <i>la tabla y su índice</i>                     <u>paso 4</u>   <em>un número es tuyo</em>
+│
+├── <b>api.mjs</b>            <i>nuevo: embeddings en Ollama, respuesta en Google</i> <u>paso 3</u>
+├── <b>db.mjs</b>             <i>la conexión a Postgres</i>                   <u>paso 4</u>
+├── <b>lotes.mjs</b>          <i>de la clase 7, sin cambios</i>               <u>paso 1</u>
+├── <b>similitud.mjs</b>      <i>de la clase 6, para verificar</i>            <u>paso 1</u>
+├── <b>trocear.mjs</b>        <i>de la clase 7 + trocearPorMarca()</i>        <u>paso 5</u>
+├── <b>marca.mjs</b>          <i>la estructura de tu corpus</i>              <u>paso 5</u>   <em>lo programás vos</em>
+├── <b>buscar.mjs</b>         <i>la búsqueda, escrita en SQL</i>              <u>paso 8</u>   <em>lo programás vos</em>
+│
+├── <b>crear-tabla.mjs</b>    <i>corre esquema.sql</i>                        <u>paso 4</u>
+├── <b>indexar.mjs</b>        <i>corpus → tabla</i>                           <u>pasos 6 y 7</u> <em>una consulta es tuya</em>
+├── <b>preguntar.mjs</b>      <i>el sistema completo</i>                      <u>paso 10</u>
+│
+└── <span class="gris">prueba.mjs, probar-trocear.mjs, verificar-sql.mjs, distribucion.mjs</span>
+                       <i>herramientas del camino</i></pre></div>
+
+  <h3>Quién usa a quién</h3>
+  <div class="tabla-scroll"><table>
+    <thead><tr><th>Programa</th><th>Importa funciones de</th><th>Lee</th><th>Escribe</th></tr></thead>
+    <tbody>
+      <tr><td><code class="in">indexar.mjs</code></td><td>trocear, marca, api, lotes, db</td><td>corpus/, .env</td><td>la tabla fragmentos</td></tr>
+      <tr><td><code class="in">preguntar.mjs</code></td><td>api, buscar, db</td><td>la tabla fragmentos, prompt.txt, .env</td><td>nada (imprime en pantalla)</td></tr>
+    </tbody>
+  </table></div>
+  <p>Igual que en la clase 6, los dos programas solo se tocan a través de un lugar donde uno escribe y el otro lee. Antes era <code class="in">indice.json</code>; hoy es la tabla <code class="in">fragmentos</code> adentro de Postgres.</p>
+  <div class="caja espec"><span class="rot">Lo que cambia en la forma de trabajar</span><p>Por primera vez hay un <code class="in">package.json</code> y una librería, <code class="in">pg</code>, para hablar con Postgres. Y tu programa ya no corre solo: necesita otros dos programas andando al mismo tiempo, Postgres (adentro de Docker) y Ollama. Si alguno de los dos está apagado, tu código falla aunque esté perfecto.</p></div>
+</section>
+
+<!-- PASO 0 -->
+<section class="paso" id="p0" data-titulo="Antes de empezar">
+  <div class="paso-cab"><h2><span class="num">00</span>Antes de empezar</h2><label class="listo"><input type="checkbox" id="chk-p0">Listo</label></div>
+  <p>Todo esto se instalaba en la tarea previa. Abrí Docker Desktop (que quede corriendo), abrí una terminal y comprobá las cinco cosas:</p>
+  <script type="text/plain" data-codigo data-archivo="terminal" data-tipo="comando">node --version
+docker --version
+docker image ls pgvector/pgvector
+ollama list</script>
+  <p>Y en el navegador, la dirección <code class="in">http://localhost:11434</code>.</p>
+  <div class="caja verif"><span class="rot">Verificación</span><ul>
+    <li>Node dice <code class="in">v20.6.0</code> o un número mayor.</li>
+    <li>Docker muestra su versión, sin errores.</li>
+    <li>La lista de imágenes tiene un renglón con <code class="in">pgvector/pgvector</code> y la etiqueta <code class="in">pg17</code>.</li>
+    <li><code class="in">ollama list</code> tiene un renglón con <code class="in">bge-m3</code>.</li>
+    <li>El navegador dice <code class="in">Ollama is running</code>.</li>
+  </ul></div>
+  <details class="falla"><summary>Si algo falla</summary><div class="dentro"><dl>
+    <dt>error during connect / Cannot connect to the Docker daemon</dt><dd>Docker Desktop está cerrado. Abrilo y esperá a que diga que está corriendo.</dd>
+    <dt>La lista de imágenes sale vacía</dt><dd>No se bajó la imagen. Corré <code class="in">docker pull pgvector/pgvector:pg17</code>; si la conexión del aula no da, avisale al docente, que la tiene en un pendrive.</dd>
+    <dt>ollama : el término no se reconoce</dt><dd>Ollama no está instalado, o la terminal se abrió antes de instalarlo. Abrí una terminal nueva.</dd>
+    <dt>ollama list no muestra bge-m3</dt><dd>Corré <code class="in">ollama pull bge-m3</code>. Pesa alrededor de un giga: si el aula no da, avisale al docente.</dd>
+    <dt>localhost:11434 no carga</dt><dd>Ollama está instalado pero no corriendo. Abrilo desde el menú de inicio o desde Aplicaciones.</dd>
+  </dl></div></details>
+</section>
+
+<!-- PASO 1 -->
+<section class="paso" id="p1" data-titulo="Carpeta nueva y npm">
+  <div class="paso-cab"><h2><span class="num">01</span>La carpeta nueva y la primera librería</h2><label class="listo"><input type="checkbox" id="chk-p1">Listo</label></div>
+  <p>Pará la terminal en la carpeta que tiene adentro a <code class="in">rag-reglamento</code> (no adentro de ella: al lado). Creá la carpeta nueva y traé los cuatro archivos que se reutilizan:</p>
+  <div data-os-show="win"><script type="text/plain" data-codigo data-archivo="terminal · Windows" data-tipo="comando">mkdir rag-propio
+cd rag-propio
+mkdir corpus
+copy ..\rag-reglamento\lotes.mjs .
+copy ..\rag-reglamento\similitud.mjs .
+copy ..\rag-reglamento\trocear.mjs .
+copy ..\rag-reglamento\prompt.txt .
+code .</script></div>
+  <div data-os-show="unix"><script type="text/plain" data-codigo data-archivo="terminal · Mac / Linux" data-tipo="comando">mkdir rag-propio
+cd rag-propio
+mkdir corpus
+cp ../rag-reglamento/lotes.mjs ../rag-reglamento/similitud.mjs ../rag-reglamento/trocear.mjs ../rag-reglamento/prompt.txt .
+code .</script></div>
+  <p>Copiá tus archivos <code class="in">.txt</code> o <code class="in">.md</code> adentro de la carpeta <code class="in">corpus</code>. Ahora sí, por primera vez en la materia, una librería:</p>
+  <script type="text/plain" data-codigo data-archivo="terminal" data-tipo="comando">npm init -y
+npm install pg</script>
+  <p>Y el <code class="in">.gitignore</code>, que ahora tiene que ignorar también la carpeta de la librería:</p>
+  <script type="text/plain" data-codigo data-archivo=".gitignore" data-tipo="se da hecho">.env
+node_modules</script>
+  <div class="caja verif"><span class="rot">Verificación</span><p>En la carpeta tienen que aparecer <code class="in">package.json</code>, <code class="in">package-lock.json</code> y una carpeta <code class="in">node_modules</code>. Abrí <code class="in">package.json</code>: al final dice <code class="in">"pg"</code> dentro de <code class="in">dependencies</code>, con un número de versión.</p></div>
+  <details class="teoria"><summary>Teoría: por qué ahora sí una librería</summary><div class="dentro">
+    <p>Hasta la clase 7 no usamos ninguna: <code class="in">fetch</code> y <code class="in">fs</code> vienen con Node, y todo lo demás (trocear, el coseno, los lotes) era justamente lo que había que aprender. Hablar con Postgres es otra cosa. La base no entiende HTTP: tiene su propio protocolo, una forma de intercambiar mensajes por la red, con autenticación, tipos de datos y manejo de errores. Escribirlo a mano no enseña nada sobre RAG, así que se delega en <code class="in">pg</code>, la librería que usa casi todo el mundo para Postgres en Node.</p>
+    <h4>Qué hizo npm</h4>
+    <p><code class="in">npm init -y</code> creó <code class="in">package.json</code>, la ficha del proyecto. <code class="in">npm install pg</code> bajó la librería (y las librerías que ella necesita) a <code class="in">node_modules</code>, y anotó en <code class="in">package.json</code> que el proyecto depende de <code class="in">pg</code>. Por eso <code class="in">node_modules</code> no se sube a ningún repositorio: cualquiera lo reconstruye corriendo <code class="in">npm install</code>, porque la lista está en <code class="in">package.json</code>.</p>
+  </div></details>
+  <details class="falla"><summary>Si algo falla</summary><div class="dentro"><dl>
+    <dt>El sistema no puede encontrar el archivo especificado / No such file or directory</dt><dd>La terminal no estaba parada al lado de <code class="in">rag-reglamento</code>, o tu carpeta de la clase 7 se llama distinto. Copiá los cuatro archivos a mano desde el explorador.</dd>
+    <dt>npm : el término no se reconoce</dt><dd>npm viene con Node: abrí una terminal nueva. Si sigue igual, reinstalá Node desde nodejs.org.</dd>
+    <dt>npm install se queda colgado</dt><dd>La red del aula está lenta. Esperá un minuto; si no avanza, avisale al docente.</dd>
+  </dl></div></details>
+</section>
+
+<!-- PASO 2 -->
+<section class="paso" id="p2" data-titulo="Levantar Postgres">
+  <div class="paso-cab"><h2><span class="num">02</span>Levantar la base de datos</h2><label class="listo"><input type="checkbox" id="chk-p2">Listo</label></div>
+  <p>Un solo comando arranca un Postgres con pgvector adentro de Docker. Es largo: copialo con el botón, no lo tipees.</p>
+  <script type="text/plain" data-codigo data-archivo="terminal" data-tipo="comando">docker run -d --name rag-db -e POSTGRES_PASSWORD=rag -p 5433:5432 -v rag-datos:/var/lib/postgresql/data pgvector/pgvector:pg17</script>
+  <div class="mini-tabla"><table>
+    <thead><tr><th>Pedazo</th><th>Qué significa</th></tr></thead>
+    <tbody>
+      <tr><td><code class="in">-d</code></td><td>Que corra de fondo y te devuelva la terminal.</td></tr>
+      <tr><td><code class="in">--name rag-db</code></td><td>El nombre del contenedor, para referirte a él después.</td></tr>
+      <tr><td><code class="in">-e POSTGRES_PASSWORD=rag</code></td><td>La contraseña del usuario <code class="in">postgres</code>. Es una base de práctica, en tu compu: alcanza con esta.</td></tr>
+      <tr><td><code class="in">-p 5433:5432</code></td><td>El puerto 5433 de tu compu lleva al 5432 del contenedor, que es donde escucha Postgres. Usamos 5433 por si ya tenés otro Postgres instalado en el 5432.</td></tr>
+      <tr><td><code class="in">-v rag-datos:…</code></td><td>Los datos se guardan en un volumen llamado <code class="in">rag-datos</code>, que sobrevive aunque apagues o borres el contenedor.</td></tr>
+      <tr><td><code class="in">pgvector/pgvector:pg17</code></td><td>La imagen que bajaste en la tarea previa.</td></tr>
+    </tbody>
+  </table></div>
+  <script type="text/plain" data-codigo data-archivo="terminal" data-tipo="comando">docker ps</script>
+  <div class="caja verif"><span class="rot">Verificación</span><p><code class="in">docker ps</code> muestra un renglón con <code class="in">rag-db</code>, el estado <code class="in">Up</code> y <code class="in">0.0.0.0:5433-&gt;5432/tcp</code>.</p></div>
+  <details class="teoria"><summary>Teoría: qué es un contenedor</summary><div class="dentro">
+    <p>Un <strong>contenedor</strong> es un programa que corre aislado del resto de tu sistema, con sus propios archivos y su propia configuración, como si tuviera una compu para él solo. Lo que lo describe es una <strong>imagen</strong>: un paquete con el programa y todo lo que necesita para funcionar. La imagen <code class="in">pgvector/pgvector:pg17</code> trae Postgres 17 con la extensión pgvector ya instalada.</p>
+    <p>La ventaja para una clase es enorme: todos corren exactamente la misma base, en Windows, en Mac o en Linux, sin instalar Postgres a mano ni pelearse con versiones. Y cuando no la necesitás, la apagás y no queda nada corriendo.</p>
+  </div></details>
+  <div class="caja atencion"><span class="rot">Atención</span><p>El <code class="in">docker run</code> se corre una sola vez. Si apagás la compu, al otro día no lo repitas: el contenedor ya existe y se prende con <code class="in">docker start rag-db</code>.</p></div>
+  <details class="falla"><summary>Si algo falla</summary><div class="dentro"><dl>
+    <dt>The container name "/rag-db" is already in use</dt><dd>Ya lo creaste antes. No hace falta otro: <code class="in">docker start rag-db</code>.</dd>
+    <dt>Bind for 0.0.0.0:5433 failed: port is already allocated</dt><dd>Algo ya usa el puerto 5433. Borrá el contenedor con <code class="in">docker rm rag-db</code>, repetí el comando cambiando <code class="in">5433:5432</code> por <code class="in">5434:5432</code>, y en el paso 3 poné 5434 en el <code class="in">.env</code>.</dd>
+    <dt>Unable to find image … locally, y empieza a bajar</dt><dd>No estaba bajada. Dejala terminar si la red da; si no, avisale al docente.</dd>
+    <dt>docker ps no muestra rag-db</dt><dd>Arrancó y se cayó. Mirá por qué con <code class="in">docker logs rag-db</code> y llamá al docente.</dd>
+  </dl></div></details>
+</section>
+
+<!-- PASO 3 -->
+<section class="paso" id="p3" data-titulo="Embeddings en tu compu">
+  <div class="paso-cab"><h2><span class="num">03</span>Los embeddings, en tu compu</h2><label class="listo"><input type="checkbox" id="chk-p3">Listo</label></div>
+  <p>Este <code class="in">api.mjs</code> reemplaza al de la clase 7. Las funciones tienen los mismos nombres (<code class="in">embedding</code>, <code class="in">embeddingsEnLote</code>, <code class="in">responder</code>) y el contador <code class="in">pedidos</code> sigue ahí. Lo que cambia es a quién le habla cada una: los embeddings van a Ollama, en tu compu; la respuesta sigue yendo a Google.</p>
+  <script type="text/plain" data-codigo data-archivo="api.mjs (nuevo)" data-tipo="se da hecho">// Clase 8: un proveedor para cada tarea.
+//   embeddings -> Ollama, en tu compu (habla como OpenAI y no pide clave)
+//   respuesta  -> PROVEEDOR_CHAT=gemini: Google AI Studio
+//                 PROVEEDOR_CHAT=openai: OpenAI o compatibles (con URL_CHAT)
+const {
+  URL_EMBEDDINGS = "http://localhost:11434/v1",
+  MODELO_EMBEDDINGS,
+  DIMENSIONES,
+  PROVEEDOR_CHAT = "gemini",
+  API_KEY,
+  URL_CHAT = "https://api.openai.com/v1",
+  MODELO_CHAT,
+} = process.env;
+
+if (!MODELO_EMBEDDINGS) throw new Error("Falta MODELO_EMBEDDINGS. ¿Corriste node con --env-file=.env?");
+
+const GEMINI = "https://generativelanguage.googleapis.com/v1beta/models";
+
+// Cuenta cuántos pedidos HTTP salieron desde que arrancó el programa (clase 7).
+export let pedidos = 0;
+
+// Hace el pedido HTTP. Si el proveedor dice "pará un poco" (429),
+// espera y reintenta hasta tres veces.
+async function pedir(url, cuerpo, encabezados = {}, intento = 1) {
+  pedidos++;
+  let res;
+  try {
+    res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...encabezados },
+      body: JSON.stringify(cuerpo),
+    });
+  } catch (e) {
+    if (url.startsWith(URL_EMBEDDINGS)) {
+      throw new Error(`No contesta nadie en ${URL_EMBEDDINGS}. ¿Está abierto Ollama?`);
+    }
+    throw e;
+  }
+  if (res.status === 429 && intento <= 3) {
+    console.log(`  (límite de pedidos: espero ${10 * intento} segundos y reintento)`);
+    await new Promise(r => setTimeout(r, 10000 * intento));
+    return pedir(url, cuerpo, encabezados, intento + 1);
+  }
+  if (!res.ok) throw new Error(`La API respondió ${res.status}: ${await res.text()}`);
+  return res.json();
+}
+
+function revisarDimension(vector) {
+  if (DIMENSIONES && vector.length !== Number(DIMENSIONES)) {
+    throw new Error(`El modelo devolvió ${vector.length} números y el .env dice DIMENSIONES=${DIMENSIONES}`);
+  }
+  return vector;
+}
+
+// Muchos textos -> muchos vectores, en UN SOLO pedido a Ollama.
+// Devuelve los vectores en el mismo orden que los textos.
+export async function embeddingsEnLote(textos) {
+  const datos = await pedir(`${URL_EMBEDDINGS}/embeddings`, {
+    model: MODELO_EMBEDDINGS,
+    input: textos,
+  });
+  // cada resultado trae su posición (index): se ordena por las dudas
+  const vectores = datos.data
+    .sort((a, b) => (a.index ?? 0) - (b.index ?? 0))
+    .map(d => d.embedding);
+  if (vectores.length !== textos.length) {
+    throw new Error(`Mandé ${textos.length} textos y volvieron ${vectores.length} vectores`);
+  }
+  return vectores.map(revisarDimension);
+}
+
+// Un texto -> un vector: es un lote de uno.
+export async function embedding(texto) {
+  const [vector] = await embeddingsEnLote([texto]);
+  return vector;
+}
+
+// La respuesta sigue saliendo de la nube, igual que en las clases 6 y 7.
+export async function responder(prompt) {
+  if (!API_KEY) throw new Error("Falta API_KEY en el .env (la clave de Google AI Studio)");
+  if (!MODELO_CHAT) throw new Error("Falta MODELO_CHAT en el .env");
+  if (PROVEEDOR_CHAT === "gemini") {
+    const datos = await pedir(
+      `${GEMINI}/${MODELO_CHAT}:generateContent`,
+      { contents: [{ role: "user", parts: [{ text: prompt }] }] },
+      { "x-goog-api-key": API_KEY },
+    );
+    const partes = datos.candidates?.[0]?.content?.parts;
+    if (!partes) throw new Error(`Respuesta vacía: ${JSON.stringify(datos)}`);
+    return partes.map(p => p.text).join("");
+  }
+  const datos = await pedir(
+    `${URL_CHAT}/chat/completions`,
+    { model: MODELO_CHAT, messages: [{ role: "user", content: prompt }] },
+    { "Authorization": `Bearer ${API_KEY}` },
+  );
+  return datos.choices[0].message.content;
+}</script>
+  <p>Creá el <code class="in">.env</code> desde el editor. Pegá tu clave de Google, la misma de las clases 6 y 7. Fijate que todavía no tiene <code class="in">DIMENSIONES</code>: falta averiguar ese número.</p>
+  <script type="text/plain" data-codigo data-archivo=".env" data-tipo="completar">URL_EMBEDDINGS=http://localhost:11434/v1
+MODELO_EMBEDDINGS=bge-m3
+
+PROVEEDOR_CHAT=gemini
+API_KEY=pegá-acá-tu-clave
+MODELO_CHAT=gemini-3.5-flash-lite
+
+DATABASE_URL=postgres://postgres:rag@localhost:5433/postgres</script>
+  <div class="caja cuaderno"><span class="rot">Ficha 1 · antes de correr</span><p>En las clases 6 y 7 cada embedding tenía 1536 números, porque así lo pedía tu <code class="in">.env</code>. Hoy el modelo es otro. Anotá: ¿cuántos números creés que va a devolver bge-m3? ¿Los mismos 1536, más o menos? ¿Por qué?</p></div>
+  <script type="text/plain" data-codigo data-archivo="prueba.mjs" data-tipo="se da hecho">import { embeddingsEnLote, pedidos } from "./api.mjs";
+
+const [a, b] = await embeddingsEnLote(["hola", "chau"]);
+console.log("Cantidad de números de cada vector:", a.length, b.length);
+console.log("Los primeros cinco de 'hola':", a.slice(0, 5));
+console.log("Pedidos:", pedidos);</script>
+  <script type="text/plain" data-codigo data-archivo="terminal" data-tipo="comando">node --env-file=.env prueba.mjs</script>
+  <div class="caja verif"><span class="rot">Verificación</span><p>Tiene que imprimir la cantidad de números de los dos vectores, cinco números decimales y <code class="in">Pedidos: 1</code>: dos textos, un solo pedido. La primera vez puede tardar unos segundos, mientras Ollama carga el modelo en memoria; las siguientes son casi instantáneas. Ningún dato salió de tu compu.</p></div>
+  <p>Ahora que sabés el número, agregalo al <code class="in">.env</code>, debajo de <code class="in">MODELO_EMBEDDINGS</code>. Desde este momento, si algún día el modelo devuelve otra cantidad, <code class="in">api.mjs</code> te avisa en lugar de guardar basura.</p>
+  <script type="text/plain" data-codigo data-archivo=".env (renglón nuevo)" data-tipo="completar">DIMENSIONES=el-número-que-viste</script>
+  <details class="teoria"><summary>Teoría: por qué el embedding se puede mudar y la respuesta no <span class="cuando">· abrila después de completar la ficha</span></summary><div class="dentro">
+    <p>Los dos son redes neuronales, pero trabajan de formas muy distintas.</p>
+    <h4>El modelo de embeddings hace una sola pasada</h4>
+    <p>Lee el texto entero de una vez y devuelve una lista de números. No genera nada palabra por palabra. bge-m3 tiene unos 570 millones de parámetros (los pesos de la clase 2) y ocupa alrededor de un giga: corre bien en cualquier compu, incluso sin placa de video.</p>
+    <h4>El modelo de chat genera token por token</h4>
+    <p>Para escribir una respuesta de cien tokens hace cien pasadas, una por token, cada una sobre todo lo anterior (es la inferencia autoregresiva de la clase 2). Y un modelo que escriba bien tiene miles de millones de parámetros. En una compu común eso es lento o directamente no entra en la memoria. Por eso la respuesta sigue en la nube.</p>
+    <h4>Por qué conviene este reparto</h4>
+    <p>Indexar es la parte que hace muchos pedidos: uno por lote, sobre todo el corpus, y otra vez cada vez que cambiás el troceado. Preguntar hace uno solo. Mudando los embeddings, lo pesado en cantidad no gasta tu cupo gratuito de Google, y lo pesado en cálculo queda donde hay hardware para hacerlo.</p>
+  </div></details>
+  <details class="falla"><summary>Si algo falla</summary><div class="dentro"><dl>
+    <dt>No contesta nadie en http://localhost:11434/v1. ¿Está abierto Ollama?</dt><dd>Exactamente eso: abrí Ollama y probá de nuevo.</dd>
+    <dt>La API respondió 404 … model "bge-m3" not found</dt><dd>El modelo no está bajado, o está mal escrito en el <code class="in">.env</code>. Corré <code class="in">ollama list</code> y copiá el nombre tal cual.</dd>
+    <dt>Falta MODELO_EMBEDDINGS. ¿Corriste node con --env-file=.env?</dt><dd>Te faltó <code class="in">--env-file=.env</code>, o el archivo no se llama exactamente <code class="in">.env</code>.</dd>
+    <dt>El modelo devolvió … números y el .env dice DIMENSIONES=1536</dt><dd>Copiaste el <code class="in">.env</code> de la clase 7. Ese número era el de Google: cambialo por el que viste hoy.</dd>
+  </dl></div></details>
+</section>
+
+<!-- PASO 4 -->
+<section class="paso" id="p4" data-titulo="Crear la tabla">
+  <div class="paso-cab"><h2><span class="num">04</span>Crear la tabla</h2><label class="listo"><input type="checkbox" id="chk-p4">Listo</label></div>
+  <p>En la clase 7 cada fragmento era un objeto con su texto y sus metadatos. En una base de datos eso es una <strong>fila</strong>, y cada propiedad es una <strong>columna</strong> con un tipo fijo. Este archivo describe la tabla. Le falta un número, el de la columna del vector:</p>
+  <script type="text/plain" data-codigo data-archivo="esquema.sql" data-tipo="completá el TODO">-- Activa pgvector en esta base (si ya estaba activo, no hace nada)
+CREATE EXTENSION IF NOT EXISTS vector;
+
+-- Arranca de cero: si la tabla ya existía, la borra con todo lo que tenía
+DROP TABLE IF EXISTS fragmentos;
+
+-- Cada fila es un fragmento de tu corpus. Cada metadato de la clase 7 es una columna.
+CREATE TABLE fragmentos (
+  id        SERIAL PRIMARY KEY,      -- número automático, lo pone Postgres
+  fuente    TEXT NOT NULL,           -- de qué archivo salió
+  seccion   TEXT,                    -- qué parte del archivo (puede quedar vacía)
+  posicion  INTEGER NOT NULL,        -- qué número de fragmento es dentro del archivo
+  texto     TEXT NOT NULL,           -- el fragmento en sí
+  embedding VECTOR(____) NOT NULL    -- TODO: ¿cuántos números devuelve tu modelo?
+);
+
+-- Índice HNSW para buscar rápido por distancia coseno
+CREATE INDEX ON fragmentos USING hnsw (embedding vector_cosine_ops);</script>
+  <details class="solucion"><summary>Ver pista</summary><div class="dentro">
+    <p>Es el mismo número que acabás de poner en <code class="in">DIMENSIONES</code>. Tienen que coincidir siempre: el <code class="in">.env</code> controla lo que sale del modelo y la columna controla lo que entra en la base.</p>
+  </div></details>
+  <details class="solucion"><summary>Ver solución</summary><div class="dentro">
+    <script type="text/plain" data-codigo data-archivo="esquema.sql · el renglón del TODO" data-tipo="solución">  embedding VECTOR(1024) NOT NULL    -- su vector: tantos números como devuelve tu modelo</script>
+  </div></details>
+  <p>Dos archivos más, que se dan hechos. <code class="in">db.mjs</code> abre la conexión con la base, y <code class="in">crear-tabla.mjs</code> le manda <code class="in">esquema.sql</code> entero:</p>
+  <script type="text/plain" data-codigo data-archivo="db.mjs" data-tipo="se da hecho">import pg from "pg";
+
+if (!process.env.DATABASE_URL) {
+  throw new Error("Falta DATABASE_URL en el .env. ¿Corriste node con --env-file=.env?");
+}
+
+// Un "pool" es un grupo de conexiones abiertas a la base que se reusan.
+export const db = new pg.Pool({ connectionString: process.env.DATABASE_URL });
+
+// pgvector recibe los vectores escritos como texto: "[0.12,-0.03,...]".
+// JSON.stringify de un arreglo de números da exactamente ese formato.
+export function comoVector(numeros) {
+  return JSON.stringify(numeros);
+}</script>
+  <script type="text/plain" data-codigo data-archivo="crear-tabla.mjs" data-tipo="se da hecho">import { readFile } from "node:fs/promises";
+import { db } from "./db.mjs";
+
+const sql = await readFile("esquema.sql", "utf8");
+await db.query(sql);
+console.log("Listo: extensión vector activa, tabla fragmentos e índice HNSW creados.");
+await db.end();</script>
+  <script type="text/plain" data-codigo data-archivo="terminal" data-tipo="comando">node --env-file=.env crear-tabla.mjs</script>
+  <div class="caja verif"><span class="rot">Verificación</span><p>Tiene que imprimir <code class="in">Listo: extensión vector activa, tabla fragmentos e índice HNSW creados.</code></p></div>
+  <details class="teoria"><summary>Teoría: lo que dice esquema.sql</summary><div class="dentro">
+    <p>Está escrito en <strong>SQL</strong>, el lenguaje con el que se le habla a casi cualquier base de datos relacional. Tiene tres órdenes:</p>
+    <ol>
+      <li><code class="in">CREATE EXTENSION vector</code> activa pgvector en esta base. Una extensión le agrega a Postgres tipos de datos y operaciones que no trae de fábrica: pgvector agrega el tipo <code class="in">VECTOR</code>, las distancias entre vectores y los índices para buscar por cercanía.</li>
+      <li><code class="in">CREATE TABLE</code> define las columnas. Cada metadato de la clase 7 es una columna: <code class="in">fuente</code> es el archivo, <code class="in">seccion</code> es la parte del archivo (lo que antes era el número de artículo). <code class="in">VECTOR(n)</code> es una columna que guarda exactamente <em>n</em> números. Ni uno más ni uno menos.</li>
+      <li><code class="in">CREATE INDEX … USING hnsw</code> arma un índice para buscar rápido por distancia coseno (eso dice <code class="in">vector_cosine_ops</code>). Cómo funciona por dentro lo vas a ver en el paso 8.</li>
+    </ol>
+    <p>El <code class="in">DROP TABLE</code> del medio borra la tabla si ya existía. Por eso podés correr <code class="in">crear-tabla.mjs</code> todas las veces que quieras: siempre arranca de cero, y siempre con la dimensión que diga el archivo.</p>
+  </div></details>
+  <details class="falla"><summary>Si algo falla</summary><div class="dentro"><dl>
+    <dt>connect ECONNREFUSED 127.0.0.1:5433</dt><dd>La base no está corriendo. <code class="in">docker start rag-db</code>, y fijate en <code class="in">docker ps</code> que diga Up.</dd>
+    <dt>password authentication failed for user "postgres"</dt><dd>La contraseña de <code class="in">DATABASE_URL</code> no es la del <code class="in">docker run</code>. Tiene que decir <code class="in">postgres:rag@</code>.</dd>
+    <dt>syntax error at or near "____"</dt><dd>Te faltó completar el TODO.</dd>
+    <dt>Falta DATABASE_URL en el .env</dt><dd>Falta el renglón, o corriste sin <code class="in">--env-file=.env</code>.</dd>
+    <dt>Cannot find package 'pg'</dt><dd>No corriste <code class="in">npm install pg</code>, o lo corriste en otra carpeta.</dd>
+  </dl></div></details>
+</section>
+
+<!-- PASO 5 -->
+<section class="paso" id="p5" data-titulo="Trocear tu corpus">
+  <div class="paso-cab"><h2><span class="num">05</span>Trocear tu corpus</h2><label class="listo"><input type="checkbox" id="chk-p5">Listo</label></div>
+  <p>Tu <code class="in">trocearPorArticulo</code> de la clase 7 solo sirve para el reglamento: busca exactamente <code class="in">Artículo N.</code>. Esta función hace lo mismo para cualquier documento: recibe la marca como parámetro. Agregala al final de <code class="in">trocear.mjs</code>, debajo de las otras dos, que se quedan como están.</p>
+  <script type="text/plain" data-codigo data-archivo="trocear.mjs (al final)" data-tipo="se da hecho">// Clase 8: la idea de trocearPorArticulo, para cualquier documento.
+// "marca" es una expresión regular que reconoce el párrafo donde empieza cada parte.
+// Lo que la marca reconoce se guarda como "seccion": es lo que se va a citar como fuente.
+// Un título solo, sin contenido abajo, se pega adelante de la parte siguiente.
+// Una parte más larga que "maximo" se corta con el trocear de la clase 5.
+export function trocearPorMarca(texto, marca, maximo = 2000) {
+  const fragmentos = [];
+  let seccion = null;      // la parte en la que estamos parados
+  let parrafos = [];       // los párrafos que se van juntando
+  let prefijo = "";        // títulos sueltos que esperan a la parte siguiente
+
+  function cerrar() {
+    if (parrafos.length === 0) return;
+    const cuerpo = parrafos.join("\n\n");
+    if (parrafos.length === 1 && cuerpo.length < 120 && seccion !== null) {
+      prefijo += cuerpo + "\n";            // era un título solo
+    } else {
+      const completo = prefijo + cuerpo;
+      const pedazos = completo.length > maximo
+        ? trocear(completo, maximo, 200).map(f => f.texto)
+        : [completo];
+      for (const t of pedazos) fragmentos.push({ id: fragmentos.length, seccion, texto: t });
+      prefijo = "";
+    }
+    parrafos = [];
+  }
+
+  for (const parrafo of texto.replace(/\r\n/g, "\n").split(/\n\s*\n/)) {
+    const p = parrafo.trim();
+    if (!p) continue;
+    const m = p.match(marca);
+    if (m) {
+      cerrar();
+      seccion = m[0].trim();
+    }
+    parrafos.push(p);
+  }
+  cerrar();
+  if (prefijo) fragmentos.push({ id: fragmentos.length, seccion, texto: prefijo.trim() });
+  return fragmentos;
+}</script>
+  <p>Ahora la parte que es tuya. En la tarea previa anotaste qué marca el comienzo de cada parte de tu corpus. Escribila como expresión regular en un archivo nuevo:</p>
+  <script type="text/plain" data-codigo data-archivo="marca.mjs" data-tipo="completá el TODO">// La marca de TU corpus: una expresión regular que reconoce
+// el párrafo donde empieza cada parte (como "Artículo N." en el reglamento).
+// Si tu corpus no tiene ninguna estructura clara, poné null: se trocea fijo.
+
+// TODO: reemplazá null por la expresión regular de tu corpus.
+export const MARCA = null;</script>
+  <details class="solucion"><summary>Ver pista</summary><div class="dentro">
+    <p>Tiene que empezar con <code class="in">^</code> (principio del párrafo) y describir lo que tienen en común todos los comienzos. Algunos ejemplos:</p>
+    <div class="mini-tabla"><table>
+      <thead><tr><th>Si tu corpus tiene…</th><th>La marca</th></tr></thead>
+      <tbody>
+        <tr><td>Títulos de Markdown: <code class="in"># Instalación</code>, <code class="in">## Requisitos</code></td><td><code class="in">/^#{1,3} .+/</code></td></tr>
+        <tr><td>Capítulos: <code class="in">Capítulo 3</code></td><td><code class="in">/^Capítulo \d+/</code></td></tr>
+        <tr><td>Secciones numeradas: <code class="in">2.1 Configuración</code></td><td><code class="in">/^\d+(\.\d+)* \S.*/</code></td></tr>
+        <tr><td>Preguntas frecuentes: <code class="in">P: ¿Cómo…?</code></td><td><code class="in">/^P:.*/</code></td></tr>
+        <tr><td>Reglas numeradas: <code class="in">Regla 12.</code></td><td><code class="in">/^Regla \d+\./</code></td></tr>
+      </tbody>
+    </table></div>
+    <p>Lo que la marca reconoce es lo que se va a citar como fuente. Por eso <code class="in">.+</code> al final de la de Markdown: así la sección se llama como el título entero y no solo <code class="in">##</code>.</p>
+  </div></details>
+  <details class="solucion"><summary>Ver solución</summary><div class="dentro">
+    <p class="aviso">Depende de tu corpus: no hay una solución única. Esta es la del reglamento, que reconoce los artículos y los títulos.</p>
+    <script type="text/plain" data-codigo data-archivo="marca.mjs · la del reglamento" data-tipo="solución">export const MARCA = /^(Artículo \d+\.|TÍTULO [IVX]+)/;</script>
+  </div></details>
+  <script type="text/plain" data-codigo data-archivo="probar-trocear.mjs" data-tipo="se da hecho">import { readFile, readdir } from "node:fs/promises";
+import { trocear, trocearPorMarca } from "./trocear.mjs";
+import { MARCA } from "./marca.mjs";
+
+for (const archivo of (await readdir("corpus")).filter(a => /\.(txt|md)$/i.test(a))) {
+  const texto = await readFile(`corpus/${archivo}`, "utf8");
+  const fragmentos = MARCA ? trocearPorMarca(texto, MARCA) : trocear(texto, 1000, 150);
+  const largos = fragmentos.map(f => f.texto.length);
+  const conSeccion = fragmentos.filter(f => f.seccion).length;
+
+  console.log(`\n${archivo}: ${texto.length} caracteres -> ${fragmentos.length} fragmentos`);
+  console.log(`  con sección reconocida: ${conSeccion} de ${fragmentos.length}`);
+  console.log(`  el más corto: ${Math.min(...largos)} caracteres · el más largo: ${Math.max(...largos)}`);
+  for (const f of fragmentos.slice(0, 4)) {
+    console.log(`  #${f.id}  [${f.seccion ?? "sin sección"}]  «${f.texto.slice(0, 50).replace(/\s+/g, " ")}…»`);
+  }
+}</script>
+  <script type="text/plain" data-codigo data-archivo="terminal" data-tipo="comando">node probar-trocear.mjs</script>
+  <div class="caja cuaderno"><span class="rot">Ficha 2 · tu estructura</span>
+    <ol>
+      <li>¿Cuántos fragmentos salieron? ¿Cuántos tienen sección reconocida?</li>
+      <li>Abrí tu corpus y fijate si las secciones que muestra son las que esperabas. Si alguna parte quedó sin reconocer, ¿qué tiene de distinto su comienzo?</li>
+      <li>Mirá el más corto y el más largo. Si el más largo pasa de 2000 caracteres, ¿qué le hace la función? ¿Qué se pierde con eso?</li>
+      <li>Si pusiste <code class="in">null</code>: ¿por qué tu corpus no tiene una marca que sirva? ¿Qué problema de la clase 7 vuelve a aparecer?</li>
+    </ol>
+  </div>
+  <details class="falla"><summary>Si algo falla</summary><div class="dentro"><dl>
+    <dt>con sección reconocida: 0 de …</dt><dd>La marca no coincide con nada. Revisá mayúsculas, tildes y que empiece con <code class="in">^</code>. Probá primero con algo que sepas que está al principio de un párrafo.</dd>
+    <dt>Sale 1 solo fragmento enorme, o muy pocos</dt><dd>Tu archivo no tiene renglones vacíos entre párrafos. Abrilo y fijate: si los párrafos están pegados, agregá los renglones vacíos o avisale al docente.</dd>
+    <dt>Invalid regular expression</dt><dd>La expresión tiene un error de escritura. Un paréntesis o una barra de más es lo más común.</dd>
+    <dt>No hay archivos: no imprime nada</dt><dd>La carpeta <code class="in">corpus</code> está vacía o tus archivos no terminan en <code class="in">.txt</code> o <code class="in">.md</code>.</dd>
+  </dl></div></details>
+</section>
+
+<!-- PASO 6 -->
+<section class="paso" id="p6" data-titulo="Indexar en la base">
+  <div class="paso-cab"><h2><span class="num">06</span>Indexar en la base</h2><label class="listo"><input type="checkbox" id="chk-p6">Listo</label></div>
+  <p>Es el <code class="in">indexar.mjs</code> de la clase 7 con dos cambios: recorre todos los archivos de <code class="in">corpus</code>, y en lugar de juntar todo en un arreglo para escribir un JSON, guarda cada fragmento en la tabla apenas tiene su vector. La orden que guarda una fila falta: es tuya.</p>
+  <div class="caja espec"><span class="rot">Especificación</span>
+    <p><strong>La consulta INSERT</strong></p>
+    <dl>
+      <dt>Qué hace</dt><dd>Agrega una fila a la tabla <code class="in">fragmentos</code>.</dd>
+      <dt>Columnas</dt><dd><code class="in">fuente</code>, <code class="in">seccion</code>, <code class="in">posicion</code>, <code class="in">texto</code> y <code class="in">embedding</code>, en ese orden. El <code class="in">id</code> no va: lo pone Postgres solo.</dd>
+      <dt>Valores</dt><dd><code class="in">$1</code> a <code class="in">$5</code>. La librería los reemplaza por los cinco elementos del arreglo que va después de la consulta, en el mismo orden.</dd>
+    </dl>
+  </div>
+  <script type="text/plain" data-codigo data-archivo="indexar.mjs" data-tipo="completá el TODO">import { readFile, readdir } from "node:fs/promises";
+import { trocear, trocearPorMarca } from "./trocear.mjs";
+import { embeddingsEnLote, pedidos } from "./api.mjs";
+import { agrupar } from "./lotes.mjs";
+import { db, comoVector } from "./db.mjs";
+import { MARCA } from "./marca.mjs";
+
+const TAMANO_LOTE = 32;   // Ollama no tiene el tope de 100 de Google, pero corre en tu compu
+
+const archivos = (await readdir("corpus")).filter(a => /\.(txt|md)$/i.test(a));
+if (archivos.length === 0) throw new Error("No hay archivos .txt ni .md en la carpeta corpus");
+console.time("tiempo total");
+
+let total = 0;
+for (const archivo of archivos) {
+  const texto = await readFile(`corpus/${archivo}`, "utf8");
+  const fragmentos = MARCA ? trocearPorMarca(texto, MARCA) : trocear(texto, 1000, 150);
+  const lotes = agrupar(fragmentos, TAMANO_LOTE);
+  console.log(`${archivo}: ${fragmentos.length} fragmentos en ${lotes.length} lote(s)`);
+
+  for (const lote of lotes) {
+    const vectores = await embeddingsEnLote(lote.map(f => f.texto));
+    for (let i = 0; i < lote.length; i++) {
+      await db.query(
+        // TODO: la consulta que guarda una fila en la tabla fragmentos,
+        //       con las cinco columnas y los valores $1 a $5 en ese orden.
+        ``,
+        [archivo, lote[i].seccion ?? null, lote[i].id, lote[i].texto, comoVector(vectores[i])],
+      );
+    }
+    total += lote.length;
+  }
+}
+
+console.timeEnd("tiempo total");
+console.log(`Pedidos a Ollama: ${pedidos}. Fragmentos guardados: ${total}.`);
+await db.end();</script>
+  <details class="solucion"><summary>Ver pista</summary><div class="dentro">
+    <p>La forma es <code class="in">INSERT INTO tabla (columna1, columna2, …) VALUES ($1, $2, …)</code>. Va entre comillas invertidas, como texto. Fijate que el arreglo de abajo ya está en el orden de las columnas.</p>
+  </div></details>
+  <details class="solucion"><summary>Ver solución</summary><div class="dentro">
+    <script type="text/plain" data-codigo data-archivo="indexar.mjs · la consulta" data-tipo="solución">      await db.query(
+        `INSERT INTO fragmentos (fuente, seccion, posicion, texto, embedding)
+         VALUES ($1, $2, $3, $4, $5)`,
+        [archivo, lote[i].seccion ?? null, lote[i].id, lote[i].texto, comoVector(vectores[i])],
+      );</script>
+  </div></details>
+  <script type="text/plain" data-codigo data-archivo="terminal" data-tipo="comando">node --env-file=.env indexar.mjs</script>
+  <p>Y para ver lo que quedó guardado, le preguntás directamente a la base:</p>
+  <script type="text/plain" data-codigo data-archivo="terminal" data-tipo="comando">docker exec rag-db psql -U postgres -c "SELECT fuente, count(*) FROM fragmentos GROUP BY fuente;"</script>
+  <div class="caja verif"><span class="rot">Verificación</span><p>La cantidad que muestra la base para cada archivo tiene que ser la misma que <code class="in">probar-trocear.mjs</code> dio en el paso 5. Anotala: la vas a necesitar en el paso que sigue.</p></div>
+  <details class="teoria"><summary>Teoría: por qué $1 y no el texto adentro de la consulta</summary><div class="dentro">
+    <p>Sería tentador armar la consulta pegando los valores adentro, con <code class="in">`… VALUES ('${archivo}', '${texto}' …)`</code>. No se hace nunca. Alcanza con que un fragmento tenga un apóstrofo, como <em>"l'école"</em>, para que la comilla del texto cierre la de la consulta antes de tiempo y la orden se rompa.</p>
+    <p>Y si el texto viene de alguien que no conocés, es peor: un texto escrito a propósito puede cerrar la comilla y agregar órdenes propias, como borrar la tabla. Ese ataque se llama <strong>inyección SQL</strong> y es uno de los más viejos y comunes en la web. Con <code class="in">$1</code>, <code class="in">$2</code>… la consulta y los datos viajan por separado: la base nunca confunde un dato con una orden.</p>
+    <h4>Y el vector, ¿por qué con comoVector?</h4>
+    <p>pgvector recibe los vectores escritos como texto, entre corchetes: <code class="in">[0.12,-0.03,…]</code>. Si le pasás el arreglo de JavaScript directo, <code class="in">pg</code> lo convierte al formato de arreglos de Postgres, que usa llaves, y pgvector no lo entiende. <code class="in">JSON.stringify</code> da justo el formato de los corchetes.</p>
+  </div></details>
+  <details class="falla"><summary>Si algo falla</summary><div class="dentro"><dl>
+    <dt>expected 1024 dimensions, not …</dt><dd>La columna y el modelo no coinciden. Corregí el número en <code class="in">esquema.sql</code> y volvé a correr <code class="in">crear-tabla.mjs</code>.</dd>
+    <dt>relation "fragmentos" does not exist</dt><dd>No corriste el paso 4, o la consulta dice otro nombre de tabla.</dd>
+    <dt>column "…" of relation "fragmentos" does not exist</dt><dd>Un nombre de columna mal escrito en tu INSERT. Tienen que ser los de <code class="in">esquema.sql</code>, sin tildes: <code class="in">seccion</code>, <code class="in">posicion</code>.</dd>
+    <dt>bind message supplies 5 parameters, but prepared statement requires 4</dt><dd>Te falta un <code class="in">$</code>: tiene que haber cinco, del <code class="in">$1</code> al <code class="in">$5</code>.</dd>
+    <dt>malformed vector literal: "{…</dt><dd>Al quinto valor le falta <code class="in">comoVector(…)</code>.</dd>
+    <dt>Cannot find module …/marca.mjs</dt><dd>No creaste <code class="in">marca.mjs</code> en el paso 5.</dd>
+  </dl></div></details>
+</section>
+
+<!-- PASO 7 -->
+<section class="paso" id="p7" data-titulo="Indexar otra vez">
+  <div class="paso-cab"><h2><span class="num">07</span>Indexar otra vez</h2><label class="listo"><input type="checkbox" id="chk-p7">Listo</label></div>
+  <p>En las clases 6 y 7 corriste <code class="in">indexar.mjs</code> muchas veces: cada vez que cambiabas algo, volvías a indexar y listo.</p>
+  <div class="caja cuaderno"><span class="rot">Ficha 3 · antes de correr</span><p>Si ahora corrés <code class="in">indexar.mjs</code> otra vez, sin cambiar nada, ¿cuántas filas va a tener la tabla? Anotá el número y por qué.</p></div>
+  <script type="text/plain" data-codigo data-archivo="terminal" data-tipo="comando">node --env-file=.env indexar.mjs
+docker exec rag-db psql -U postgres -c "SELECT fuente, count(*) FROM fragmentos GROUP BY fuente;"</script>
+  <div class="caja cuaderno"><span class="rot">Ficha 3 · después de correr</span><p>¿Acertaste? Si en este momento le hicieras una pregunta al sistema, ¿qué verías entre los tres primeros resultados? ¿Por qué en las clases 6 y 7 esto no pasaba nunca, aunque indexaras veinte veces?</p></div>
+  <details class="teoria"><summary>Teoría: el archivo se pisa, la base acumula <span class="cuando">· abrila después de completar la ficha</span></summary><div class="dentro">
+    <p><code class="in">writeFile</code> reemplaza el archivo entero: cada indexado borraba sin avisar el índice anterior y escribía uno nuevo. Un <code class="in">INSERT</code> hace otra cosa: <em>agrega</em>. La base guarda todo lo que le mandaste hasta que le digas lo contrario. Eso es justamente lo que se le pide a una base de datos, que no pierda nada, y se llama <strong>persistencia</strong>. Pero significa que ahora vos sos responsable de no repetir.</p>
+    <p>Cada fragmento quedó dos veces, con el mismo vector. Una pregunta va a traer las dos copias del mejor fragmento en los dos primeros lugares, y el modelo va a recibir el mismo texto dos veces y un fragmento útil menos.</p>
+    <h4>Qué hacen los sistemas de verdad</h4>
+    <p>Lo más simple es lo que vas a hacer ahora: vaciar la tabla antes de indexar. Funciona, pero cada cambio en un solo archivo obliga a recalcular todos los embeddings de todo el corpus. Los sistemas grandes hacen <strong>actualización incremental</strong>: detectan qué archivos cambiaron y reemplazan solo esas filas. Queda afuera de lo que construimos.</p>
+  </div></details>
+  <p>El arreglo: que <code class="in">indexar.mjs</code> vacíe la tabla antes de empezar. Agregá este renglón justo debajo de <code class="in">const TAMANO_LOTE</code>:</p>
+  <script type="text/plain" data-codigo data-archivo="indexar.mjs (renglón nuevo)" data-tipo="se da hecho">await db.query("TRUNCATE fragmentos RESTART IDENTITY");   // arranca de cero: sin duplicados</script>
+  <script type="text/plain" data-codigo data-archivo="terminal" data-tipo="comando">node --env-file=.env indexar.mjs
+docker exec rag-db psql -U postgres -c "SELECT fuente, count(*) FROM fragmentos GROUP BY fuente;"</script>
+  <div class="caja verif"><span class="rot">Verificación</span><p>Vuelve a dar la cantidad del paso 6, y queda así aunque lo corras diez veces. <code class="in">RESTART IDENTITY</code> además hace que el <code class="in">id</code> vuelva a empezar desde 1.</p></div>
+</section>
+
+<!-- PASO 8 -->
+<section class="paso" id="p8" data-titulo="Buscar con SQL">
+  <div class="paso-cab"><h2><span class="num">08</span>Buscar con SQL</h2><label class="listo"><input type="checkbox" id="chk-p8">Listo</label></div>
+  <p>Es el reemplazo de tu <code class="in">buscarPorSignificado</code> de la clase 6. Misma idea, pero ya no recorrés vos el índice: le pedís a Postgres los <em>k</em> fragmentos más cercanos y la cuenta la hace la base. pgvector agrega un operador nuevo, <code class="in">&lt;=&gt;</code>, que da la <strong>distancia coseno</strong> entre dos vectores.</p>
+  <div class="caja espec"><span class="rot">Especificación</span>
+    <p><strong>buscar(vectorPregunta, k)</strong></p>
+    <dl>
+      <dt>Qué hace</dt><dd>Devuelve los <em>k</em> fragmentos de la tabla más cercanos a la pregunta, del más cercano al más lejano.</dd>
+      <dt>Distancia</dt><dd><code class="in">embedding &lt;=&gt; $1</code> es la distancia coseno entre la columna y la pregunta: 0 si apuntan para el mismo lado, más grande cuanto más se alejan.</dd>
+      <dt>Similitud</dt><dd>Es 1 menos la distancia. Es el mismo número que daba tu <code class="in">coseno</code>, así el umbral y la salida se leen igual que en la clase 7.</dd>
+      <dt>Salida</dt><dd>Filas con <code class="in">id</code>, <code class="in">fuente</code>, <code class="in">seccion</code>, <code class="in">posicion</code>, <code class="in">texto</code> y <code class="in">similitud</code>.</dd>
+    </dl>
+  </div>
+  <script type="text/plain" data-codigo data-archivo="buscar.mjs" data-tipo="completá el TODO">import { db, comoVector } from "./db.mjs";
+
+// Los k fragmentos más parecidos a la pregunta, de mayor a menor similitud.
+// La cuenta la hace Postgres: <=> es la distancia coseno.
+export async function buscar(vectorPregunta, k = 3) {
+  const { rows } = await db.query(
+    `SELECT id, fuente, seccion, posicion, texto,
+            -- TODO 1: la similitud, calculada a partir de la distancia
+            AS similitud
+       FROM fragmentos
+      -- TODO 2: ordenar del más cercano al más lejano y quedarse con k ($2)
+    `,
+    [comoVector(vectorPregunta), k],
+  );
+  return rows;
+}</script>
+  <details class="solucion"><summary>Ver pista</summary><div class="dentro">
+    <p><strong>TODO 1:</strong> una resta, con la distancia entre paréntesis. <strong>TODO 2:</strong> dos cláusulas de SQL. <code class="in">ORDER BY</code> seguido de lo que querés ordenar (ordena de menor a mayor si no decís nada, y acá eso es justo lo que querés: la distancia más chica primero) y <code class="in">LIMIT</code> seguido de cuántas filas querés.</p>
+    <p>Un detalle que importa: ordená por la <em>distancia</em>, no por la similitud. Da el mismo orden, pero el índice HNSW solo se usa cuando el <code class="in">ORDER BY</code> es exactamente la distancia.</p>
+  </div></details>
+  <details class="solucion"><summary>Ver solución</summary><div class="dentro">
+    <p class="aviso">Probá primero con la pista.</p>
+    <script type="text/plain" data-codigo data-archivo="buscar.mjs · solución" data-tipo="solución">import { db, comoVector } from "./db.mjs";
+
+// Los k fragmentos más parecidos a la pregunta, de mayor a menor similitud.
+// La cuenta la hace Postgres: <=> es la distancia coseno, y similitud = 1 - distancia.
+export async function buscar(vectorPregunta, k = 3) {
+  const { rows } = await db.query(
+    `SELECT id, fuente, seccion, posicion, texto,
+            1 - (embedding <=> $1) AS similitud
+       FROM fragmentos
+      ORDER BY embedding <=> $1
+      LIMIT $2`,
+    [comoVector(vectorPregunta), k],
+  );
+  return rows;
+}</script>
+  </div></details>
+  <p>¿Cómo sabés que Postgres calcula lo mismo que vos? Este programa trae los tres mejores y, para cada uno, vuelve a hacer la cuenta con tu <code class="in">coseno</code> de la clase 6:</p>
+  <script type="text/plain" data-codigo data-archivo="verificar-sql.mjs" data-tipo="se da hecho">import { embedding } from "./api.mjs";
+import { buscar } from "./buscar.mjs";
+import { coseno } from "./similitud.mjs";
+import { db } from "./db.mjs";
+
+// La misma cuenta, hecha dos veces: por Postgres y por tu coseno de la clase 6.
+const pregunta = process.argv[2] ?? "de qué trata este documento";
+const v = await embedding(pregunta);
+
+for (const r of await buscar(v, 3)) {
+  // le pedimos a la base el vector guardado; llega como texto "[0.1,...]"
+  const { rows } = await db.query("SELECT embedding FROM fragmentos WHERE id = $1", [r.id]);
+  const guardado = JSON.parse(rows[0].embedding);
+  console.log(`id ${r.id}   Postgres: ${r.similitud.toFixed(6)}   tu coseno: ${coseno(v, guardado).toFixed(6)}`);
+}
+await db.end();</script>
+  <script type="text/plain" data-codigo data-archivo="terminal" data-tipo="comando">node --env-file=.env verificar-sql.mjs "una pregunta sobre tu corpus"</script>
+  <div class="caja verif"><span class="rot">Verificación</span><p>Las dos columnas tienen que coincidir en los seis decimales, o diferir apenas en el último: es la misma fórmula, hecha por dos programas distintos. Los tres primeros tienen que ser tres fragmentos distintos: si te aparece el mismo dos veces, el <code class="in">TRUNCATE</code> del paso 7 no está.</p></div>
+  <details class="teoria"><summary>Teoría: cómo busca el índice sin mirar a todos</summary><div class="dentro">
+    <p>Tu <code class="in">buscarPorSignificado</code> comparaba la pregunta contra todos los fragmentos. Con mil fragmentos, mil cosenos por pregunta; con un millón, un millón. El índice HNSW evita eso, y se puede entender en tres ideas.</p>
+    <h4>1. Cada punto conoce a sus vecinos</h4>
+    <p>Al indexar, el índice une cada vector con unos pocos vectores cercanos, como un mapa de rutas entre ciudades vecinas. Además deja algunas conexiones largas, que cruzan el mapa.</p>
+    <h4>2. Buscar es saltar de vecino en vecino</h4>
+    <p>La búsqueda arranca en un punto fijo, mira a sus vecinos, salta al que esté más cerca de la pregunta, y repite. Cuando ningún vecino está más cerca que el punto donde está parada, termina. Compara contra los vecinos del camino, no contra todos.</p>
+    <h4>3. Es aproximado</h4>
+    <p>A veces el camino se traba en un punto que está cerca pero no es el más cercano de todos. HNSW cambia un poco de exactitud por mucha velocidad. Para un RAG es un buen negocio: el fragmento que se le escapa suele ser casi tan parecido como el que encontró.</p>
+    <p>El nombre completo es <em>Hierarchical Navigable Small World</em>. Lo de jerárquico es que arma varios pisos: arriba pocos puntos y conexiones largas, para acercarse rápido; abajo todos los puntos y conexiones cortas, para afinar. Como ir por autopista, después por avenida y al final por la calle.</p>
+    <div class="widget hnsw" aria-label="Simulador de búsqueda por vecinos">
+      <svg id="hnswSvg" viewBox="0 0 520 300" role="img" aria-label="Puntos unidos con sus vecinos y el camino de una búsqueda"></svg>
+      <div class="ctrl">
+        <div class="lectura">Tocá el mapa para poner la pregunta en otro lugar.</div>
+        <div class="cuentas">
+          <div><span class="valor" id="hnswComp">0</span><span class="lectura" id="hnswCompTxt">comparaciones</span></div>
+          <div><span class="valor" id="hnswOk">—</span><span class="lectura">¿encontró el más cercano de todos?</span></div>
+        </div>
+        <div><button type="button" class="boton-teoria" id="hnswOtro">Otros puntos</button></div>
+        <div class="leyenda-puntos"><span class="p-esta">●</span> camino de la búsqueda &nbsp; ◎ el más cercano de verdad &nbsp; ✕ la pregunta</div>
+      </div>
+    </div>
+  </div></details>
+  <details class="falla"><summary>Si algo falla</summary><div class="dentro"><dl>
+    <dt>syntax error at or near "AS"</dt><dd>Falta el TODO 1: quedó <code class="in">AS similitud</code> sin nada adelante.</dd>
+    <dt>syntax error at end of input</dt><dd>Falta el TODO 2, o quedó a medias.</dd>
+    <dt>Los resultados salen del menos parecido al más parecido</dt><dd>Ordenaste la distancia de mayor a menor (<code class="in">DESC</code>). Sacalo.</dd>
+    <dt>similitud sale negativa o mayor que 1</dt><dd>La resta está al revés: es 1 menos la distancia, no la distancia menos 1.</dd>
+    <dt>Las dos columnas no coinciden</dt><dd>Mostrale al docente: puede ser que el fragmento se haya guardado con el vector de otro.</dd>
+  </dl></div></details>
+</section>
+
+<!-- PASO 9 -->
+<section class="paso" id="p9" data-titulo="Calibrar el umbral">
+  <div class="paso-cab"><h2><span class="num">09</span>Calibrar el umbral de nuevo</h2><label class="listo"><input type="checkbox" id="chk-p9">Listo</label></div>
+  <p>En la clase 7 elegiste un umbral para el reglamento con el modelo de Google. Hoy cambiaron el modelo y el corpus.</p>
+  <div class="caja cuaderno"><span class="rot">Ficha 4 · antes de correr</span><p>Copiá acá el <code class="in">UMBRAL</code> de tu <code class="in">.env</code> de la clase 7. ¿Te sirve para hoy? ¿Por qué sí o por qué no?</p></div>
+  <p>Es el <code class="in">distribucion.mjs</code> de la clase 7, con la búsqueda en la base. Pegá tus cuatro preguntas que sí están y tus dos que no, de la tarea previa:</p>
+  <script type="text/plain" data-codigo data-archivo="distribucion.mjs" data-tipo="completar">import { embeddingsEnLote } from "./api.mjs";
+import { buscar } from "./buscar.mjs";
+import { db } from "./db.mjs";
+
+// Preguntas cuya respuesta SÍ está en tu corpus: las cuatro de tu tarea previa.
+const ESTAN = [
+  "pegá acá tu pregunta 1",
+  "pegá acá tu pregunta 2",
+  "pegá acá tu pregunta 3",
+  "pegá acá tu pregunta 4",
+];
+
+// Preguntas cuya respuesta NO está: tus dos, y tres que sirven para casi cualquier corpus.
+// Si alguna de las tres está en el tuyo, cambiala por otra.
+const NO_ESTAN = [
+  "pegá acá tu pregunta 5",
+  "pegá acá tu pregunta 6",
+  "cuál es la contraseña del wifi",
+  "quién ganó el último mundial",
+  "cómo se hace una milanesa",
+];
+const preguntas = [...ESTAN, ...NO_ESTAN];
+const vectores = await embeddingsEnLote(preguntas);   // todas las preguntas, un solo pedido
+
+const filas = [];
+for (const [i, p] of preguntas.entries()) {
+  const [mejor] = await buscar(vectores[i], 1);
+  filas.push({ pregunta: p, esta: i < ESTAN.length, mejor: mejor.similitud });
+}
+await db.end();
+
+filas.sort((a, b) => b.mejor - a.mejor);
+for (const f of filas) {
+  console.log(`${f.mejor.toFixed(3)}  ${f.esta ? "[está]   " : "[NO está]"}  ${f.pregunta}`);
+}</script>
+  <script type="text/plain" data-codigo data-archivo="terminal" data-tipo="comando">node --env-file=.env distribucion.mjs</script>
+  <div class="caja cuaderno"><span class="rot">Ficha 4 · dónde cortar</span>
+    <ol>
+      <li>Igual que en la clase 7: dibujá una recta de 0 a 1 y marcá cada pregunta, cruz para las que están, círculo para las que no.</li>
+      <li>Marcá también tu umbral de la clase 7. ¿Qué pasaría hoy con ese número: cuántas preguntas que están descartaría y cuántas que no están dejaría pasar?</li>
+      <li>¿Hay un hueco limpio entre cruces y círculos? Elegí tu umbral nuevo y anotalo.</li>
+      <li>Si las nubes se pisan, anotá cuáles son las preguntas del lado equivocado. Las vas a mostrar en la exposición.</li>
+    </ol>
+  </div>
+  <p>Agregá tu umbral nuevo al <code class="in">.env</code>. El punto decimal es un punto, no una coma.</p>
+  <script type="text/plain" data-codigo data-archivo=".env (renglón nuevo, al final)" data-tipo="completar">UMBRAL=pegá-acá-tu-número</script>
+  <details class="teoria"><summary>Teoría: cada modelo tiene su propia escala <span class="cuando">· abrila después de completar la ficha</span></summary><div class="dentro">
+    <p>Lo dijimos en la clase 6 y en la 7: los números de similitud no se comparan entre modelos. Hoy lo viste en tu propia recta. bge-m3 y el modelo de Google ubican los textos en mapas distintos, con escalas distintas: en uno, dos textos sin relación pueden dar 0,5 y en el otro 0,3. Lo único que se mantiene es el orden dentro de cada modelo.</p>
+    <p>Por eso el umbral vive en el <code class="in">.env</code> al lado del modelo, y por eso se calibra con preguntas cuya respuesta conocés. Cambiar el modelo, el corpus o el troceado obliga a volver a medir.</p>
+  </div></details>
+  <details class="falla"><summary>Si algo falla</summary><div class="dentro"><dl>
+    <dt>Cannot read properties of undefined (reading 'similitud')</dt><dd>La tabla está vacía: volvé a correr <code class="in">indexar.mjs</code>.</dd>
+    <dt>Todas las preguntas, las que están y las que no, dan casi lo mismo</dt><dd>Revisá que hayas reemplazado los "pegá acá…". Si ya lo hiciste, puede que tu corpus sea muy chico o muy parejo: mostráselo al docente.</dd>
+  </dl></div></details>
+</section>
+
+<!-- PASO 10 -->
+<section class="paso" id="p10" data-titulo="Tu RAG completo">
+  <div class="paso-cab"><h2><span class="num">10</span>Tu RAG completo</h2><label class="listo"><input type="checkbox" id="chk-p10">Listo</label></div>
+  <p>El <code class="in">prompt.txt</code> que copiaste habla del reglamento. Cambiá el primer renglón por el tema de tu corpus. El resto se queda: la restricción de usar solo los fragmentos, la frase exacta para cuando no está, y el renglón <code class="in">Fuente:</code>, que ahora cita la etiqueta del fragmento (archivo y sección).</p>
+  <script type="text/plain" data-codigo data-archivo="prompt.txt" data-tipo="completar">Sos un asistente que responde consultas sobre ______________________.
+
+Respondé usando EXCLUSIVAMENTE los fragmentos que aparecen más abajo. No uses ningún conocimiento propio. Si los fragmentos no contienen la respuesta, respondé exactamente: "No lo encuentro en los documentos."
+
+Formato de la respuesta:
+- Una respuesta breve, de tres oraciones como máximo.
+- Después, el renglón "Fuente:" con la etiqueta del fragmento del que sacaste la respuesta, tal como aparece entre guiones.
+
+FRAGMENTOS:
+{{fragmentos}}
+
+PREGUNTA:
+{{pregunta}}</script>
+  <p>Y el <code class="in">preguntar.mjs</code> de la clase 7, con la búsqueda en la base y la etiqueta nueva. Reemplazalo entero:</p>
+  <script type="text/plain" data-codigo data-archivo="preguntar.mjs" data-tipo="se da hecho">import { readFile } from "node:fs/promises";
+import { embedding, responder } from "./api.mjs";
+import { buscar } from "./buscar.mjs";
+import { db } from "./db.mjs";
+
+const PLANTILLA = await readFile("prompt.txt", "utf8");
+const UMBRAL = Number(process.env.UMBRAL ?? 0);
+if (!process.env.UMBRAL) console.log("(sin UMBRAL en el .env: no se descarta ningún fragmento)");
+
+const pregunta = process.argv[2];
+if (!pregunta) {
+  console.log('Uso: node --env-file=.env preguntar.mjs "tu pregunta"');
+  process.exit(1);
+}
+
+const vectorPregunta = await embedding(pregunta);
+const resultados = await buscar(vectorPregunta, 3);
+await db.end();
+
+// la etiqueta con la que se cita cada fragmento: archivo y sección
+const etiqueta = r => `${r.fuente} · ${r.seccion ?? `fragmento ${r.posicion}`}`;
+
+console.log("\nFRAGMENTOS RECUPERADOS");
+for (const r of resultados) {
+  const marca = r.similitud >= UMBRAL ? "  " : "✗ ";
+  console.log(`  ${marca}${r.similitud.toFixed(3)}  ${etiqueta(r)}`);
+}
+
+const utiles = resultados.filter(r => r.similitud >= UMBRAL);
+if (utiles.length === 0) {
+  console.log("\nRESPUESTA");
+  console.log("No lo encuentro en los documentos.");
+  console.log(`(ningún fragmento llegó al umbral de ${UMBRAL}: no se llamó al modelo)`);
+  process.exit(0);
+}
+
+const fragmentos = utiles
+  .map(r => `--- ${etiqueta(r)} ---\n${r.texto}`)
+  .join("\n\n");
+const prompt = PLANTILLA
+  .replace("{{fragmentos}}", fragmentos)
+  .replace("{{pregunta}}", pregunta);
+
+// con --sin-modelo solo muestra la búsqueda, sin gastar la llamada al modelo
+if (process.argv.includes("--sin-modelo")) process.exit(0);
+
+console.log("\nRESPUESTA");
+console.log(await responder(prompt));</script>
+  <script type="text/plain" data-codigo data-archivo="terminal" data-tipo="comando">node --env-file=.env preguntar.mjs "una de tus preguntas que sí está"
+node --env-file=.env preguntar.mjs "una de tus preguntas que no está"</script>
+  <div class="caja verif"><span class="rot">Verificación</span><p>La que está tiene que traer al menos un fragmento sin <code class="in">✗</code> y una respuesta con <code class="in">Fuente:</code> que nombra tu archivo y la sección. La que no está tiene que contestar "No lo encuentro en los documentos." sin llamar al modelo. Abrí tu corpus y comprobá que la fuente dice lo que el modelo dijo.</p></div>
+  <div class="caja cuaderno"><span class="rot">Ficha 5 · tus cuatro preguntas · se conserva para la exposición</span>
+    <div class="tabla-scroll"><table>
+      <thead><tr><th>#</th><th>Similitud del primero</th><th>Fuente que citó</th><th>¿La respuesta es correcta?</th><th>Si falló: ¿falló la búsqueda o el modelo?</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td class="vacio"></td><td class="vacio"></td><td class="vacio"></td><td class="vacio"></td></tr>
+        <tr><td>2</td><td class="vacio"></td><td class="vacio"></td><td class="vacio"></td><td class="vacio"></td></tr>
+        <tr><td>3</td><td class="vacio"></td><td class="vacio"></td><td class="vacio"></td><td class="vacio"></td></tr>
+        <tr><td>4</td><td class="vacio"></td><td class="vacio"></td><td class="vacio"></td><td class="vacio"></td></tr>
+      </tbody>
+    </table></div>
+    <p>Para saber quién falló: corré la pregunta con <code class="in">--sin-modelo</code>. Si el fragmento correcto no está entre los tres, falló la búsqueda. Si está y la respuesta igual es mala, falló el modelo.</p>
+  </div>
+  <details class="falla"><summary>Si algo falla</summary><div class="dentro"><dl>
+    <dt>La API respondió 400 / 401 / 403</dt><dd>La clave de Google está mal copiada o venció. Es la del <code class="in">.env</code> de la clase 7.</dd>
+    <dt>La API respondió 404</dt><dd>El nombre de <code class="in">MODELO_CHAT</code> cambió. Usá el que dicte el docente.</dd>
+    <dt>La API respondió 429 después de los reintentos</dt><dd>Se agotó tu cupo diario de Google. Hoy solo lo gastan las respuestas, así que debería alcanzar; si no, avisale al docente.</dd>
+    <dt>Siempre dice "No lo encuentro", aun para las que están</dt><dd>Umbral demasiado alto, o escrito con coma. Volvé a la Ficha 4.</dd>
+    <dt>Fuente: dice "fragmento 12" en lugar de una sección</dt><dd>Ese fragmento no tiene sección: o tu marca es <code class="in">null</code>, o esa parte del corpus no la reconoció (Ficha 2).</dd>
+  </dl></div></details>
+</section>
+
+<!-- PASO 11 -->
+<section class="paso" id="p11" data-titulo="Mirar adentro de la base">
+  <div class="paso-cab"><h2><span class="num">11</span>Mirar adentro de la base <span style="font-size:15px;font-weight:400;color:var(--suave)">· si te da el tiempo</span></h2><label class="listo"><input type="checkbox" id="chk-p11">Listo</label></div>
+  <p>Hasta ahora le hablaste a Postgres desde tu programa. También se le puede hablar directo, con su consola, <code class="in">psql</code>, que viene adentro del contenedor:</p>
+  <script type="text/plain" data-codigo data-archivo="terminal" data-tipo="comando">docker exec -it rag-db psql -U postgres</script>
+  <p>El cursor cambia a <code class="in">postgres=#</code>. Probá estas órdenes de a una (las que empiezan con barra son de la consola; las otras son SQL y terminan con punto y coma):</p>
+  <script type="text/plain" data-codigo data-archivo="psql" data-tipo="comando">\d fragmentos
+SELECT extversion FROM pg_extension WHERE extname = 'vector';
+SELECT id, fuente, seccion, length(texto) FROM fragmentos ORDER BY length(texto) DESC LIMIT 5;
+SELECT b.id, b.seccion, round((1 - (a.embedding <=> b.embedding))::numeric, 3) AS similitud
+  FROM fragmentos a, fragmentos b
+ WHERE a.id = 1
+ ORDER BY a.embedding <=> b.embedding
+ LIMIT 5;
+\q</script>
+  <div class="caja cuaderno"><span class="rot">Para tu cuaderno</span><p>La última consulta busca los cinco fragmentos más parecidos al fragmento 1, sin ninguna pregunta de por medio. ¿Cuál sale primero, y con qué similitud? ¿Por qué? ¿Los otros cuatro tienen sentido como "vecinos"?</p></div>
+</section>
+
+<footer class="cierre">
+  <p><strong>Antes de irte:</strong> no borres nada. Si querés apagar la base, <code class="in">docker stop rag-db</code>; la próxima vez, <code class="in">docker start rag-db</code> y los datos siguen ahí. Ollama se puede quedar abierto. Las próximas dos clases son las exposiciones: tu Ficha 5, tu recta de la Ficha 4 y las preguntas que quedaron del lado equivocado son el material para contar qué construiste. Si terminaste antes: agregá un segundo archivo a <code class="in">corpus</code>, volvé a indexar y hacé una pregunta cuya respuesta necesite datos de los dos.</p>
+  <details class="teoria glosario"><summary>Glosario de la clase</summary><div class="dentro"><dl>
+    <dt>Base de datos</dt><dd>Programa que guarda datos de forma persistente y responde consultas sobre ellos, aunque muchos programas le hablen a la vez.</dd>
+    <dt>Tabla, fila, columna</dt><dd>En una base relacional, la tabla es el conjunto de datos de un tipo; cada fila es un elemento; cada columna, una propiedad con un tipo fijo.</dd>
+    <dt>SQL</dt><dd>Lenguaje con el que se crean tablas y se consultan o modifican datos en una base relacional.</dd>
+    <dt>Extensión</dt><dd>Agregado que suma a Postgres tipos de datos y operaciones que no trae de fábrica. pgvector es una.</dd>
+    <dt>VECTOR(n)</dt><dd>Tipo de columna de pgvector que guarda exactamente n números.</dd>
+    <dt>Distancia coseno</dt><dd>1 menos la similitud coseno. En pgvector, el operador &lt;=&gt;.</dd>
+    <dt>HNSW</dt><dd>Índice que encuentra los vectores más cercanos saltando entre vecinos, sin comparar contra todos. Es aproximado.</dd>
+    <dt>Búsqueda aproximada</dt><dd>Búsqueda que puede no devolver el más cercano de todos a cambio de ser mucho más rápida.</dd>
+    <dt>Contenedor e imagen</dt><dd>El contenedor es un programa corriendo aislado; la imagen es el paquete que lo describe.</dd>
+    <dt>Volumen</dt><dd>Lugar donde Docker guarda datos que sobreviven al contenedor.</dd>
+    <dt>Persistencia</dt><dd>Que los datos sigan ahí después de que el programa que los escribió terminó.</dd>
+    <dt>Consulta parametrizada</dt><dd>Consulta con $1, $2… donde los datos viajan separados de la orden.</dd>
+    <dt>Inyección SQL</dt><dd>Ataque que mete órdenes dentro de un dato para que la base las ejecute.</dd>
+    <dt>Actualización incremental</dt><dd>Reindexar solo lo que cambió, en lugar de todo el corpus.</dd>
+  </dl></div></details>
+  <p>Desarrollo con IA · UDI III · IES Santa Fe</p>
+</footer>
+</main>
+</div>
+
+<script>
+(function () {
+  // ---------- almacenamiento seguro ----------
+  const leer = (k, d) => { try { const v = localStorage.getItem(k); return v === null ? d : v; } catch (e) { return d; } };
+  const guardar = (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} };
+
+  // ---------- resaltado ----------
+  const KW = new Set(["import","from","export","function","const","let","for","of","if","return","await","async","throw","new","while","break","true","false","null"]);
+  const SQLKW = new Set(["CREATE","EXTENSION","IF","NOT","EXISTS","DROP","TABLE","SERIAL","PRIMARY","KEY","TEXT","INTEGER","NULL","VECTOR","INDEX","ON","USING","SELECT","FROM","WHERE","ORDER","BY","LIMIT","INSERT","INTO","VALUES","AS","TRUNCATE","RESTART","IDENTITY","GROUP","DESC"]);
+  function esc(s) { return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
+  function resaltar(src, tipo) {
+    if (tipo === "comando" || /\.(env|gitignore|txt)( |$)/.test(tipo) || /^\.env/.test(tipo) || /^prompt/.test(tipo)) return esc(src);
+    const sql = /\.sql/.test(tipo);
+    const re = sql
+      ? /(--[^\n]*)|('(?:[^'\n])*')|(\b[A-Za-z_]\w*\b)/g
+      : /(\/\/[^\n]*|--[^\n]*(?=\n|$))|(`(?:\\.|[^`\\])*`|"(?:\\.|[^"\\\n])*"|'(?:\\.|[^'\\\n])*')|(\b[A-Za-z_]\w*\b)/g;
+    let out = "", last = 0, m;
+    while ((m = re.exec(src))) {
+      out += esc(src.slice(last, m.index));
+      if (m[1]) out += m[1].includes("TODO") ? `<span class="c t">${esc(m[1])}</span>` : `<span class="c">${esc(m[1])}</span>`;
+      else if (m[2]) out += `<span class="s">${resaltarTodo(m[2])}</span>`;
+      else out += (sql ? SQLKW.has(m[3]) : KW.has(m[3])) ? `<span class="k">${m[3]}</span>` : m[3];
+      last = re.lastIndex;
+    }
+    return out + esc(src.slice(last));
+  }
+  // dentro de una plantilla de SQL, los comentarios -- TODO se marcan igual
+  function resaltarTodo(s) {
+    return esc(s).replace(/(--[^\n]*TODO[^\n]*)/g, '<span class="t">$1</span>');
+  }
+
+  // ---------- bloques de código ----------
+  document.querySelectorAll("script[data-codigo]").forEach((el, i) => {
+    const src = el.textContent.replace(/^\n/, "").replace(/\s+$/, "");
+    const archivo = el.dataset.archivo, tipo = el.dataset.tipo || "";
+    const caja = document.createElement("div");
+    caja.className = "codigo";
+    const esTodo = tipo.includes("TODO") || tipo === "completar";
+    const lenguaje = tipo === "comando" ? "comando" : archivo;
+    caja.innerHTML =
+      `<div class="cab"><span><span class="archivo">${esc(archivo)}</span><span class="tipo${esTodo ? " todo" : ""}">${esc(tipo)}</span></span>` +
+      `<button type="button" class="copiar" id="copiar-${i}">Copiar</button></div>` +
+      `<pre><code>${resaltar(src, lenguaje)}</code></pre>`;
+    el.replaceWith(caja);
+    const btn = caja.querySelector(".copiar");
+    btn.addEventListener("click", () => {
+      const ok = () => { btn.textContent = "Copiado"; btn.classList.add("ok"); setTimeout(() => { btn.textContent = "Copiar"; btn.classList.remove("ok"); }, 1600); };
+      const seleccionar = () => { const r = document.createRange(); r.selectNodeContents(caja.querySelector("code")); const s = getSelection(); s.removeAllRanges(); s.addRange(r); btn.textContent = "Seleccionado: Ctrl+C"; };
+      try { navigator.clipboard.writeText(src).then(ok, seleccionar); } catch (e) { seleccionar(); }
+    });
+  });
+
+  // ---------- sistema operativo ----------
+  const bWin = document.getElementById("osWin"), bUnix = document.getElementById("osUnix");
+  function ponerOS(os) {
+    document.body.dataset.os = os;
+    bWin.setAttribute("aria-pressed", os === "win");
+    bUnix.setAttribute("aria-pressed", os === "unix");
+    guardar("rag8-os", os);
+  }
+  ponerOS(leer("rag8-os", /Mac|Linux/.test(navigator.platform || "") ? "unix" : "win"));
+  bWin.addEventListener("click", () => ponerOS("win"));
+  bUnix.addEventListener("click", () => ponerOS("unix"));
+
+  // ---------- índice y progreso ----------
+  const pasos = [...document.querySelectorAll("section.paso")];
+  const lista = document.getElementById("listaIndice");
+  pasos.forEach((s, i) => {
+    const li = document.createElement("li");
+    li.innerHTML = `<a href="#${s.id}" id="ind-${s.id}"><span class="n"><span>${String(i).padStart(2, "0")}</span></span>${s.dataset.titulo}</a>`;
+    lista.appendChild(li);
+  });
+  function actualizar() {
+    let n = 0;
+    pasos.forEach(s => {
+      const c = s.querySelector('input[type="checkbox"]');
+      document.getElementById("ind-" + s.id).classList.toggle("hecho", c.checked);
+      if (c.checked) n++;
+    });
+    document.getElementById("barra").style.width = (100 * n / pasos.length) + "%";
+    document.getElementById("progresoTxt").textContent = `${n} de ${pasos.length} pasos`;
+  }
+  pasos.forEach(s => {
+    const c = s.querySelector('input[type="checkbox"]');
+    c.checked = leer("rag8-" + c.id, "0") === "1";
+    c.addEventListener("change", () => { guardar("rag8-" + c.id, c.checked ? "1" : "0"); actualizar(); });
+  });
+  actualizar();
+
+  // ---------- teoría: mostrar u ocultar todo ----------
+  const bTeoria = document.getElementById("botonTeoria");
+  const teorias = [...document.querySelectorAll("details.teoria")];
+  function sincronizarBoton() {
+    const todas = teorias.every(d => d.open);
+    bTeoria.setAttribute("aria-pressed", todas);
+    bTeoria.textContent = todas ? "Ocultar toda la teoría" : "Mostrar toda la teoría";
+  }
+  bTeoria.addEventListener("click", () => {
+    const abrir = !teorias.every(d => d.open);
+    teorias.forEach(d => { d.open = abrir; });
+    sincronizarBoton();
+  });
+  teorias.forEach(d => d.addEventListener("toggle", sincronizarBoton));
+
+  // ---------- simulador: búsqueda saltando entre vecinos ----------
+  const svg = document.getElementById("hnswSvg");
+  const ns = "http://www.w3.org/2000/svg";
+  const N = 80, W = 520, H = 300, VECINOS = 4;
+  let puntos = [], vecinos = [], pregunta = { x: 420, y: 70 }, semilla = 7;
+  const azar = () => { semilla = (semilla * 16807) % 2147483647; return (semilla - 1) / 2147483646; };
+  const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+  function armar() {
+    puntos = Array.from({ length: N }, () => ({ x: 20 + azar() * (W - 40), y: 20 + azar() * (H - 40) }));
+    vecinos = puntos.map((p, i) => puntos.map((q, j) => [j, dist(p, q)]).filter(([j]) => j !== i)
+      .sort((a, b) => a[1] - b[1]).slice(0, VECINOS).map(([j]) => j));
+    // algunas conexiones largas: el "mundo pequeño"
+    for (let k = 0; k < 10; k++) { const a = Math.floor(azar() * N), b = Math.floor(azar() * N); if (a !== b) { vecinos[a].push(b); vecinos[b].push(a); } }
+    vecinos = vecinos.map(v => [...new Set(v)]);
+  }
+  function el(tag, attrs) { const e = document.createElementNS(ns, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); return e; }
+  function buscarCamino() {
+    let actual = 0, comparaciones = 1, camino = [0];
+    const vistos = new Set([0]);
+    while (true) {
+      let mejor = actual;
+      for (const v of vecinos[actual]) {
+        if (!vistos.has(v)) { vistos.add(v); comparaciones++; }
+        if (dist(puntos[v], pregunta) < dist(puntos[mejor], pregunta)) mejor = v;
+      }
+      if (mejor === actual) break;
+      actual = mejor; camino.push(actual);
+    }
+    return { camino, comparaciones, vistos };
+  }
+  function dibujar() {
+    if (!svg) return;
+    svg.replaceChildren();
+    const lineas = el("g", { stroke: "var(--linea)", "stroke-width": 1 });
+    puntos.forEach((p, i) => vecinos[i].forEach(j => { if (j > i) lineas.appendChild(el("line", { x1: p.x, y1: p.y, x2: puntos[j].x, y2: puntos[j].y })); }));
+    svg.appendChild(lineas);
+    const { camino, comparaciones, vistos } = buscarCamino();
+    let verdad = 0; puntos.forEach((p, i) => { if (dist(p, pregunta) < dist(puntos[verdad], pregunta)) verdad = i; });
+    puntos.forEach((p, i) => svg.appendChild(el("circle", { cx: p.x, cy: p.y, r: vistos.has(i) ? 4.5 : 3.5, fill: vistos.has(i) ? "var(--suave)" : "var(--linea)" })));
+    for (let k = 1; k < camino.length; k++) {
+      const a = puntos[camino[k - 1]], b = puntos[camino[k]];
+      svg.appendChild(el("line", { x1: a.x, y1: a.y, x2: b.x, y2: b.y, stroke: "var(--marron)", "stroke-width": 3, "stroke-linecap": "round" }));
+    }
+    camino.forEach(i => svg.appendChild(el("circle", { cx: puntos[i].x, cy: puntos[i].y, r: 6, fill: "var(--marron)" })));
+    svg.appendChild(el("circle", { cx: puntos[verdad].x, cy: puntos[verdad].y, r: 11, fill: "none", stroke: "var(--tinta)", "stroke-width": 2 }));
+    const t = el("text", { x: pregunta.x, y: pregunta.y + 6, "text-anchor": "middle", "font-size": 18, "font-weight": 700, fill: "var(--tinta)" });
+    t.textContent = "✕"; svg.appendChild(t);
+    document.getElementById("hnswComp").textContent = comparaciones;
+    document.getElementById("hnswCompTxt").textContent = `comparaciones, de ${N} puntos`;
+    const ok = camino[camino.length - 1] === verdad;
+    document.getElementById("hnswOk").textContent = ok ? "Sí" : "No";
+  }
+  if (svg) {
+    armar(); dibujar();
+    svg.addEventListener("click", e => {
+      const r = svg.getBoundingClientRect();
+      pregunta = { x: (e.clientX - r.left) * W / r.width, y: (e.clientY - r.top) * H / r.height };
+      dibujar();
+    });
+    document.getElementById("hnswOtro").addEventListener("click", () => { semilla = Math.floor(Math.random() * 100000) + 1; armar(); dibujar(); });
+  }
+})();
+</script>

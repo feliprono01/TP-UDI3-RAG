@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Clase 5 — trocear y buscar</title>
+  <link rel="stylesheet" href="estilos.css">
+</head>
+<body>
+
+  <h1>Clase 5 — trocear y buscar</h1>
+
+  <section class="fila">
+    <input type="file" id="archivo" accept=".txt">
+    <span class="estado" id="estado">Cargá el reglamento.</span>
+  </section>
+
+  <section class="fila">
+    <input type="text" id="pregunta"
+           placeholder="cuántas ausencias puedo tener antes de perder la regularidad">
+    <button id="btn">Buscar y armar el prompt</button>
+  </section>
+
+  <pre id="salida">—</pre>
+
+  <!-- Script clásico, NO module: con type="module" el navegador lo bloquea
+       al abrir el archivo con doble clic, por la política de mismo origen. -->
+  <script src="app.js" defer></script>
+
+</body>
+</html>

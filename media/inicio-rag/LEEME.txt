@@ -1,0 +1,43 @@
+Clase 5 — trocear y buscar
+==========================
+
+CÓMO SE USA
+-----------
+1. Abrir index.html con doble clic. No hace falta servidor ni conexión.
+2. Con el selector de archivo, cargar reglamento.txt.
+   Tiene que decir: 9706 caracteres -> 15 fragmentos
+3. Escribir una pregunta y apretar el botón.
+4. Copiar el prompt que aparece abajo y pegarlo en el chat.
+
+ARCHIVOS
+--------
+index.html      La estructura. Carga el CSS y el JS.
+estilos.css     Los estilos.
+app.js          Toda la lógica: trocear, normalizar, buscar, armarPrompt.
+reglamento.txt  El corpus. 41 artículos, 9 títulos.
+
+LAS CUATRO PREGUNTAS DEL CIERRE
+-------------------------------
+1. cuántas ausencias puedo tener antes de perder la regularidad
+   -> ACIERTA. Fragmento 4, puntaje 4, artículo 10.
+
+2. cuál es el plazo para presentar la solicitud de equivalencias
+   -> ACIERTA. Fragmento 9, puntaje 3, artículo 27.
+
+3. cuánto puedo faltar para no quedar libre
+   -> CERO RESULTADOS. "faltar", "quedar" y "libre" no están
+      en el reglamento, aunque el artículo 10 dice exactamente eso.
+
+4. con cuánto apruebo un parcial
+   -> TRAE LOS EQUIVOCADOS. Salen primero los fragmentos de
+      equivalencias (art. 30, "reconocimiento total o parcial") y
+      de certificados (art. 35, "certificado analítico parcial").
+      El artículo 16, que tiene la respuesta, sale tercero con
+      la mitad del puntaje.
+
+UNA ADVERTENCIA TÉCNICA
+-----------------------
+app.js se carga como script clásico, NO como módulo.
+Si se cambia a <script type="module">, el navegador lo bloquea
+al abrir el archivo con doble clic, por la política de mismo
+origen, y hay que levantar un servidor. Así como está, no.

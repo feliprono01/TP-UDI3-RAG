@@ -1,0 +1,1015 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"></head><body>
+<title>Mini-RAG del Reglamento</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,400;0,600;0,800;1,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: guía de laboratorio — índice de pasos fijo a la izquierda, una columna de trabajo, cajas por rol (consigna, código, verificación, cuaderno) */
+:root {
+  --tinta: #1F1B16;
+  --marron: #6B4E2E;
+  --arena: #F4EFE6;
+  --papel: #FBF9F5;
+  --linea: #E2D9CA;
+  --suave: #6E6458;
+  --codigo-bg: #2A241D;
+  --codigo-fg: #EFE7DA;
+  --codigo-com: #A8997F;
+  --codigo-str: #D9B98A;
+  --codigo-kw: #E8A87C;
+  --ok: #3F6B3A;
+  --ok-bg: #E7EFE1;
+  --alerta: #9A3B2E;
+  --alerta-bg: #F6E4DF;
+  --cuaderno: #2F5470;
+  --cuaderno-bg: #E3ECF2;
+  --todo: #8A5A00;
+  --todo-bg: #FBEFD5;
+  --f-cuerpo: "Public Sans", "Segoe UI", system-ui, sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --tinta: #EDE6DA; --marron: #D2A877; --arena: #2A241D; --papel: #1A1612; --linea: #3B332A; --suave: #A89C8C;
+  --codigo-bg: #110E0B; --codigo-fg: #EFE7DA; --codigo-com: #8C7F6A; --codigo-str: #D9B98A; --codigo-kw: #E8A87C;
+  --ok: #9CC795; --ok-bg: #1F2B1D; --alerta: #E59A8C; --alerta-bg: #33201C; --cuaderno: #9CC0DC; --cuaderno-bg: #1A2630;
+  --todo: #E7BE6A; --todo-bg: #2E2614; color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --tinta: #EDE6DA; --marron: #D2A877; --arena: #2A241D; --papel: #1A1612; --linea: #3B332A; --suave: #A89C8C;
+  --codigo-bg: #110E0B; --codigo-fg: #EFE7DA; --codigo-com: #8C7F6A; --codigo-str: #D9B98A; --codigo-kw: #E8A87C;
+  --ok: #9CC795; --ok-bg: #1F2B1D; --alerta: #E59A8C; --alerta-bg: #33201C; --cuaderno: #9CC0DC; --cuaderno-bg: #1A2630;
+  --todo: #E7BE6A; --todo-bg: #2E2614; color-scheme: dark; }
+
+* { box-sizing: border-box; }
+body { background: var(--papel); color: var(--tinta); font-family: var(--f-cuerpo); font-size: 16px; line-height: 1.6; }
+.envoltura { display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: 48px; max-width: 1120px; margin: 0 auto; padding: 32px 24px 80px; }
+@media (max-width: 860px) { .envoltura { grid-template-columns: minmax(0,1fr); gap: 0; padding: 16px 16px 64px; } .indice { display: none; } }
+
+/* índice lateral */
+.indice { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 24px); align-self: start; font-size: 14px; }
+.indice .marca { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--suave); margin-bottom: 6px; }
+.indice ol { list-style: none; padding: 0; margin: 12px 0 0; display: grid; gap: 2px; }
+.indice a { display: flex; gap: 10px; align-items: baseline; color: var(--tinta); text-decoration: none; padding: 5px 8px; border-radius: 6px; }
+.indice a:hover { background: var(--arena); }
+.indice a .n { font-family: var(--f-mono); font-size: 12px; color: var(--suave); min-width: 1.6em; }
+.indice a.hecho .n { color: var(--ok); }
+.indice a.hecho .n::before { content: "✓"; }
+.indice a.hecho .n span { display: none; }
+.barra { height: 6px; background: var(--linea); border-radius: 3px; overflow: hidden; margin-top: 8px; }
+.barra i { display: block; height: 100%; width: 0; background: var(--marron); transition: width .3s; }
+.progreso-txt { font-size: 13px; color: var(--suave); margin-top: 6px; font-variant-numeric: tabular-nums; }
+
+/* cabecera */
+header.portada { border-bottom: 2px solid var(--tinta); padding-bottom: 24px; margin-bottom: 8px; }
+.eyebrow { font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--marron); font-weight: 600; }
+h1 { font-size: clamp(30px, 5vw, 44px); line-height: 1.1; margin: 8px 0 12px; font-weight: 800; letter-spacing: -.02em; text-wrap: balance; }
+.bajada { font-size: 18px; color: var(--suave); max-width: 62ch; margin: 0; }
+.controles { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; margin-top: 20px; font-size: 14px; }
+.selector { display: inline-flex; border: 1px solid var(--linea); border-radius: 8px; overflow: hidden; }
+.selector button { font: inherit; font-size: 14px; border: 0; background: transparent; color: var(--tinta); padding: 7px 14px; cursor: pointer; }
+.selector button[aria-pressed="true"] { background: var(--tinta); color: var(--papel); }
+.selector button:focus-visible, button:focus-visible, a:focus-visible, input:focus-visible, summary:focus-visible { outline: 2px solid var(--marron); outline-offset: 2px; }
+
+/* arquitectura */
+.flujo { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 24px 0 8px; font-family: var(--f-mono); font-size: 13px; }
+.flujo span { background: var(--arena); border: 1px solid var(--linea); padding: 6px 10px; border-radius: 6px; }
+.flujo span.nuevo { border-color: var(--marron); color: var(--marron); font-weight: 600; }
+.flujo b { color: var(--suave); font-weight: 400; }
+.leyenda { font-size: 13px; color: var(--suave); }
+
+/* pasos */
+section.paso { padding: 40px 0 8px; border-bottom: 1px solid var(--linea); scroll-margin-top: 16px; }
+.paso-cab { display: flex; gap: 16px; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; }
+.paso-cab h2 { font-size: 26px; line-height: 1.2; margin: 0; letter-spacing: -.01em; text-wrap: balance; display: flex; gap: 14px; align-items: baseline; min-width: 0; }
+.paso-cab h2 .num { font-family: var(--f-mono); font-size: 15px; color: var(--marron); font-weight: 600; flex: none; }
+.listo { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; border: 1px solid var(--linea); border-radius: 999px; padding: 6px 14px 6px 10px; cursor: pointer; user-select: none; background: var(--papel); }
+.listo input { width: 18px; height: 18px; accent-color: var(--ok); margin: 0; }
+.listo:has(input:checked) { border-color: var(--ok); color: var(--ok); background: var(--ok-bg); }
+.paso p, .paso li { max-width: 68ch; }
+.paso h3 { font-size: 17px; margin: 28px 0 8px; }
+code.in { font-family: var(--f-mono); font-size: .88em; background: var(--arena); padding: 1px 5px; border-radius: 4px; }
+
+/* bloques de código */
+.codigo { margin: 16px 0; border-radius: 10px; overflow: hidden; background: var(--codigo-bg); }
+.codigo .cab { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 8px 12px 8px 16px; font-size: 13px; color: var(--codigo-com); border-bottom: 1px solid rgba(255,255,255,.08); }
+.codigo .cab .archivo { font-family: var(--f-mono); color: var(--codigo-fg); }
+.codigo .cab .tipo { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; margin-left: 10px; padding: 2px 7px; border-radius: 4px; background: rgba(255,255,255,.08); }
+.codigo .cab .tipo.todo { background: #E7BE6A; color: #2A241D; }
+.codigo pre { margin: 0; padding: 14px 16px; overflow-x: auto; font-family: var(--f-mono); font-size: 13.5px; line-height: 1.55; color: var(--codigo-fg); }
+.codigo .c { color: var(--codigo-com); font-style: italic; }
+.codigo .s { color: var(--codigo-str); }
+.codigo .k { color: var(--codigo-kw); }
+.codigo .t { background: rgba(231,190,106,.18); color: #F3D28F; font-style: normal; font-weight: 600; }
+.copiar { font: inherit; font-size: 12px; background: transparent; border: 1px solid rgba(255,255,255,.2); color: var(--codigo-fg); border-radius: 6px; padding: 4px 10px; cursor: pointer; }
+.copiar:hover { background: rgba(255,255,255,.08); }
+.copiar.ok { border-color: #9CC795; color: #9CC795; }
+[data-os-show] { display: none; }
+body[data-os="win"] [data-os-show="win"], body[data-os="unix"] [data-os-show="unix"] { display: block; }
+[data-prov-show] { display: none; }
+body[data-prov="gemini"] [data-prov-show="gemini"], body[data-prov="openai"] [data-prov-show="openai"], body[data-prov="ollama"] [data-prov-show="ollama"] { display: block; }
+
+/* cajas por rol */
+.caja { border-radius: 10px; padding: 14px 18px; margin: 16px 0; border: 1px solid; }
+.caja .rot { font-size: 11px; letter-spacing: .1em; text-transform: uppercase; font-weight: 800; display: block; margin-bottom: 4px; }
+.caja p { margin: 6px 0; }
+.caja ul, .caja ol { margin: 6px 0; padding-left: 22px; }
+.caja.verif { background: var(--ok-bg); border-color: color-mix(in srgb, var(--ok) 35%, transparent); }
+.caja.verif .rot { color: var(--ok); }
+.caja.atencion { background: var(--alerta-bg); border-color: color-mix(in srgb, var(--alerta) 35%, transparent); }
+.caja.atencion .rot { color: var(--alerta); }
+.caja.cuaderno { background: var(--cuaderno-bg); border-color: color-mix(in srgb, var(--cuaderno) 35%, transparent); }
+.caja.cuaderno .rot { color: var(--cuaderno); }
+.caja.espec { background: var(--arena); border-color: var(--linea); }
+.caja.espec .rot { color: var(--marron); }
+.caja.espec dl { display: grid; grid-template-columns: max-content minmax(0,1fr); gap: 4px 14px; margin: 8px 0 0; }
+.caja.espec dt { font-weight: 600; }
+.caja.espec dd { margin: 0; }
+@media (max-width: 520px) { .caja.espec dl { grid-template-columns: minmax(0,1fr); } .caja.espec dd { margin-bottom: 6px; } }
+.caja.todo-caja { background: var(--todo-bg); border-color: color-mix(in srgb, var(--todo) 35%, transparent); }
+.caja.todo-caja .rot { color: var(--todo); }
+
+/* tablas de cuaderno */
+.tabla-scroll { overflow-x: auto; margin: 12px 0; }
+table { border-collapse: collapse; width: 100%; font-size: 14px; min-width: 560px; }
+th, td { border: 1px solid var(--linea); padding: 8px 10px; text-align: left; vertical-align: top; }
+th { background: var(--arena); font-weight: 600; }
+td.vacio { height: 34px; }
+
+/* si algo falla */
+details.falla { border: 1px solid var(--linea); border-radius: 10px; margin: 16px 0; background: var(--papel); }
+details.falla summary { cursor: pointer; padding: 10px 16px; font-weight: 600; font-size: 15px; color: var(--alerta); }
+details.falla .dentro { padding: 0 16px 12px; }
+details.falla dl { margin: 0; display: grid; gap: 10px; }
+details.falla dt { font-family: var(--f-mono); font-size: 13px; background: var(--arena); padding: 4px 8px; border-radius: 4px; overflow-wrap: anywhere; }
+details.falla dd { margin: 4px 0 0; font-size: 15px; }
+
+/* widget coseno */
+.widget { display: grid; grid-template-columns: minmax(0, 260px) minmax(0, 1fr); gap: 24px; align-items: center; background: var(--arena); border: 1px solid var(--linea); border-radius: 12px; padding: 20px; margin: 16px 0; }
+@media (max-width: 620px) { .widget { grid-template-columns: minmax(0,1fr); } }
+.widget svg { width: 100%; max-width: 260px; height: auto; display: block; margin: 0 auto; }
+.widget .ctrl { display: grid; gap: 12px; font-size: 14px; }
+.widget label { display: grid; gap: 4px; }
+.widget input[type=range] { width: 100%; accent-color: var(--marron); }
+.widget .valor { font-family: var(--f-mono); font-size: 28px; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--marron); }
+.widget .lectura { font-size: 14px; color: var(--suave); min-height: 1.5em; }
+
+/* pista y solución plegables */
+details.solucion { margin: 10px 0; border: 1px solid color-mix(in srgb, var(--todo) 40%, transparent); border-radius: 10px; background: var(--todo-bg); }
+details.solucion summary { cursor: pointer; padding: 9px 16px; font-weight: 600; font-size: 15px; color: var(--todo); }
+details.solucion .dentro { padding: 0 16px 12px; }
+details.solucion .dentro p { margin: 4px 0 8px; max-width: 68ch; }
+details.solucion .aviso { font-size: 14px; color: var(--suave); }
+details.solucion .codigo { margin: 8px 0 4px; }
+
+/* mapa del proyecto */
+section.mapa { padding: 40px 0 16px; border-bottom: 1px solid var(--linea); scroll-margin-top: 16px; }
+section.mapa h2 { font-size: 26px; margin: 0 0 8px; letter-spacing: -.01em; }
+section.mapa h3 { font-size: 17px; margin: 28px 0 8px; }
+section.mapa p { max-width: 68ch; }
+.arbol { background: var(--arena); border: 1px solid var(--linea); border-radius: 10px; overflow-x: auto; margin: 16px 0; }
+.arbol pre { margin: 0; padding: 16px 18px; font-family: var(--f-mono); font-size: 13.5px; line-height: 1.6; color: var(--suave); }
+.arbol b { color: var(--tinta); font-weight: 600; }
+.arbol .dir { color: var(--marron); font-weight: 600; }
+.arbol i { font-style: normal; color: var(--suave); }
+.arbol u { text-decoration: none; color: var(--marron); font-size: 12px; }
+.arbol em { font-style: normal; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; background: var(--todo-bg); color: var(--todo); padding: 1px 6px; border-radius: 4px; }
+.arbol .gris { color: var(--suave); }
+.tipos { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 700px) { .tipos { grid-template-columns: minmax(0,1fr); } }
+.tipo-arch { border: 1px solid var(--linea); border-radius: 10px; padding: 12px 14px; }
+.tipo-arch .et { font-size: 11px; letter-spacing: .1em; text-transform: uppercase; font-weight: 800; color: var(--marron); }
+.tipo-arch p { margin: 6px 0 0; font-size: 15px; }
+.ir-mapa { display: block; margin: 14px 0 -4px; padding: 5px 8px; font-size: 14px; color: var(--marron); text-decoration: none; border-radius: 6px; }
+.ir-mapa:hover { background: var(--arena); }
+
+/* teoría plegable */
+details.teoria { margin: 18px 0; border-top: 1px dashed var(--marron); border-bottom: 1px dashed var(--marron); }
+details.teoria summary { cursor: pointer; list-style: none; display: flex; align-items: center; gap: 10px; padding: 10px 2px; font-weight: 600; font-size: 15px; color: var(--marron); }
+details.teoria summary::-webkit-details-marker { display: none; }
+details.teoria summary::before { content: "+"; font-family: var(--f-mono); width: 20px; height: 20px; display: inline-grid; place-items: center; border: 1px solid var(--marron); border-radius: 4px; font-size: 14px; flex: none; }
+details.teoria[open] summary::before { content: "−"; }
+details.teoria summary { flex-wrap: wrap; row-gap: 0; }
+details.teoria summary .cuando { font-weight: 400; font-size: 13px; color: var(--suave); flex-basis: 100%; padding-left: 30px; }
+details.teoria .dentro { padding: 2px 2px 16px; }
+details.teoria .dentro p { margin: 8px 0; }
+details.teoria .dentro h4 { font-size: 15px; margin: 18px 0 4px; }
+.mini-tabla { overflow-x: auto; margin: 10px 0; }
+.mini-tabla table { min-width: 0; font-size: 14px; }
+.cita { margin: 10px 0; padding: 8px 14px; background: var(--arena); border-radius: 6px; font-style: italic; }
+.cita small { display: block; font-style: normal; color: var(--suave); margin-top: 4px; }
+.boton-teoria { font: inherit; font-size: 14px; border: 1px solid var(--marron); color: var(--marron); background: transparent; border-radius: 8px; padding: 7px 14px; cursor: pointer; }
+.boton-teoria[aria-pressed="true"] { background: var(--marron); color: var(--papel); }
+.glosario dl { display: grid; grid-template-columns: max-content minmax(0,1fr); gap: 6px 16px; margin: 8px 0; font-size: 15px; }
+.glosario dt { font-weight: 600; color: var(--tinta); }
+.glosario dd { margin: 0; color: var(--tinta); }
+@media (max-width: 520px) { .glosario dl { grid-template-columns: minmax(0,1fr); } .glosario dd { margin-bottom: 6px; } }
+
+footer.cierre { margin-top: 48px; padding-top: 24px; border-top: 2px solid var(--tinta); font-size: 14px; color: var(--suave); }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; scroll-behavior: auto !important; } }
+html { scroll-behavior: smooth; }
+</style>
+
+<div class="envoltura">
+<nav class="indice" aria-label="Pasos">
+  <div class="marca">Clase 6 · Hacelo vos</div>
+  <div class="barra" aria-hidden="true"><i id="barra"></i></div>
+  <div class="progreso-txt" id="progresoTxt">0 de 10 pasos</div>
+  <a class="ir-mapa" href="#mapa">Cómo queda el proyecto</a>
+  <ol id="listaIndice"></ol>
+</nav>
+
+<main>
+<header class="portada">
+  <div class="eyebrow">Desarrollo con IA · Clase 6 · Guía de trabajo</div>
+  <h1>Mini-RAG del Reglamento</h1>
+  <p class="bajada">Hoy reemplazás el buscador por palabras de la clase 5 por uno que busca por significado. Seguí los pasos en orden, en tu compu, mientras el docente explica la teoría. Al final tenés un programa que contesta preguntas sobre el reglamento citando el artículo.</p>
+  <div class="controles">
+    <span>Tu sistema:</span>
+    <div class="selector" role="group" aria-label="Sistema operativo">
+      <button type="button" id="osWin" aria-pressed="true">Windows</button>
+      <button type="button" id="osUnix" aria-pressed="false">Mac / Linux</button>
+    </div>
+    <button type="button" class="boton-teoria" id="botonTeoria" aria-pressed="false">Mostrar toda la teoría</button>
+  </div>
+  <div class="flujo" aria-label="Arquitectura del sistema">
+    <span>reglamento.txt</span><b>→</b><span>trocear</span><b>→</b><span class="nuevo">embedding</span><b>→</b><span class="nuevo">indice.json</span><b>→</b><span class="nuevo">coseno</span><b>→</b><span>prompt</span><b>→</b><span class="nuevo">modelo por API</span>
+  </div>
+  <div class="leyenda">En marrón, lo nuevo de hoy. El resto ya lo tenés de la clase 5.</div>
+</header>
+
+<!-- MAPA DEL PROYECTO -->
+<section class="mapa" id="mapa">
+  <h2>Cómo queda el proyecto</h2>
+  <p>Así se ve la carpeta cuando terminás los diez pasos. No hace falta crearla ahora: cada archivo aparece en el paso que indica. Volvé a mirar este mapa cuando no sepas dónde va algo.</p>
+  <div class="arbol" role="img" aria-label="Árbol de archivos del proyecto"><pre><span class="dir">rag-reglamento/</span>
+│
+├── <b>.env</b>               <i>configuración y clave · no se comparte</i>    <u>paso 1</u>
+├── <b>.gitignore</b>         <i>le dice a git que ignore el .env</i>          <u>paso 1</u>
+├── <b>reglamento.txt</b>     <i>el documento, de la clase 5</i>               <u>paso 1</u>
+├── <b>prompt.txt</b>         <i>la plantilla del prompt</i>                   <u>paso 8</u>
+│
+├── <b>trocear.mjs</b>        <i>parte el texto en fragmentos</i>              <u>paso 2</u>
+├── <b>api.mjs</b>            <i>embedding() y responder()</i>                 <u>paso 3</u>
+├── <b>similitud.mjs</b>      <i>coseno() y buscarPorSignificado()</i>    <u>pasos 4 y 7</u>  <em>lo programás vos</em>
+│
+├── <b>indexar.mjs</b>        <i>arma el índice · se corre una vez</i>         <u>paso 6</u>
+├── <b>preguntar.mjs</b>      <i>contesta una pregunta</i>                     <u>paso 8</u>
+├── <b>indice.json</b>        <i>lo genera indexar.mjs · no se toca</i>        <u>paso 6</u>
+│
+└── <span class="gris">prueba.mjs, probar-coseno.mjs, explorar.mjs</span>
+                      <i>pruebas del camino · se pueden borrar al final</i></pre></div>
+
+  <h3>Tres clases de archivos</h3>
+  <div class="tipos">
+    <div class="tipo-arch"><span class="et">Datos</span><p><code class="in">.env</code>, <code class="in">reglamento.txt</code>, <code class="in">prompt.txt</code>, <code class="in">indice.json</code>. No se ejecutan: los programas los leen o los escriben.</p></div>
+    <div class="tipo-arch"><span class="et">Módulos</span><p><code class="in">trocear.mjs</code>, <code class="in">api.mjs</code>, <code class="in">similitud.mjs</code>. Solo definen funciones y las exportan con <code class="in">export</code>. Si los corrés con node no pasa nada.</p></div>
+    <div class="tipo-arch"><span class="et">Programas</span><p><code class="in">indexar.mjs</code> y <code class="in">preguntar.mjs</code>. Son los que se corren con <code class="in">node --env-file=.env</code>. Importan funciones de los módulos y hacen el trabajo.</p></div>
+  </div>
+
+  <h3>Quién usa a quién</h3>
+  <div class="tabla-scroll"><table>
+    <thead><tr><th>Programa</th><th>Importa funciones de</th><th>Lee</th><th>Escribe</th></tr></thead>
+    <tbody>
+      <tr><td><code class="in">indexar.mjs</code></td><td>trocear.mjs, api.mjs</td><td>reglamento.txt, .env</td><td>indice.json</td></tr>
+      <tr><td><code class="in">preguntar.mjs</code></td><td>api.mjs, similitud.mjs</td><td>indice.json, prompt.txt, .env</td><td>nada (imprime en pantalla)</td></tr>
+    </tbody>
+  </table></div>
+  <p>Fijate que los dos programas solo se tocan a través de <code class="in">indice.json</code>: uno lo escribe y el otro lo lee. Por eso podés preguntar cien veces sin volver a indexar.</p>
+  <div class="caja espec"><span class="rot">¿Y el package.json?</span><p>No hay. Tampoco hay <code class="in">npm install</code> ni carpeta <code class="in">node_modules</code>: no usamos ninguna librería. <code class="in">fetch</code> para hablar con la API y <code class="in">fs</code> para leer y escribir archivos vienen incluidos en Node. La extensión <code class="in">.mjs</code> es lo que le permite a Node entender <code class="in">import</code> y <code class="in">export</code> sin configuración extra.</p></div>
+</section>
+
+<!-- PASO 0 -->
+<section class="paso" id="p0" data-titulo="Antes de empezar">
+  <div class="paso-cab"><h2><span class="num">00</span>Antes de empezar</h2><label class="listo"><input type="checkbox" id="chk-p0">Listo</label></div>
+  <p>Necesitás tres cosas: Node.js versión 20.6 o más nueva, un editor de código (VS Code sirve), y una clave de API propia. Abrí una terminal y verificá la versión:</p>
+  <script type="text/plain" data-codigo data-archivo="terminal" data-tipo="comando">node --version</script>
+  <div class="caja verif"><span class="rot">Verificación</span><p>Tiene que mostrar <code class="in">v20.6.0</code> o un número mayor (por ejemplo <code class="in">v22.11.0</code>). Hoy usamos una opción de Node, <code class="in">--env-file</code>, que no existe en versiones anteriores.</p></div>
+  <details class="falla"><summary>Si algo falla</summary><div class="dentro"><dl>
+    <dt>node : El término 'node' no se reconoce…</dt><dd>Node no está instalado, o la terminal se abrió antes de instalarlo. Cerrá la terminal y abrí una nueva. Si sigue igual, instalalo desde nodejs.org (versión LTS).</dd>
+    <dt>v18.x o v20.x menor a 20.6</dt><dd>Funciona todo menos <code class="in">--env-file</code>. Avisale al docente: hay una alternativa, pero conviene actualizar.</dd>
+  </dl></div></details>
+</section>
+
+<!-- PASO 1 -->
+<section class="paso" id="p1" data-titulo="La carpeta y la clave">
+  <div class="paso-cab"><h2><span class="num">01</span>La carpeta y la clave</h2><label class="listo"><input type="checkbox" id="chk-p1">Listo</label></div>
+  <p>Creá una carpeta nueva para el proyecto y abrila en el editor:</p>
+  <script type="text/plain" data-codigo data-archivo="terminal" data-tipo="comando">mkdir rag-reglamento
+cd rag-reglamento
+code .</script>
+  <p>Copiá adentro el <code class="in">reglamento.txt</code> de la clase 5.</p>
+  <h3>Elegí proveedor</h3>
+  <p>El código de hoy funciona con cualquier proveedor. Cambiar de uno a otro es cambiar el archivo <code class="in">.env</code>, sin tocar una línea de código. Si no te dicen otra cosa, usá Google AI Studio: tiene capa gratuita.</p>
+  <div class="selector" role="group" aria-label="Proveedor" style="margin:4px 0 8px">
+    <button type="button" data-prov="gemini" aria-pressed="true">Google AI Studio</button>
+    <button type="button" data-prov="openai" aria-pressed="false">OpenAI</button>
+    <button type="button" data-prov="ollama" aria-pressed="false">Ollama (local)</button>
+  </div>
+  <div data-prov-show="gemini">
+    <p><strong>Sacá tu clave:</strong> entrá a <code class="in">aistudio.google.com</code> con tu cuenta de Google, buscá la opción para obtener una clave de API (<em>Get API key</em>) y creá una. Es gratis y no pide tarjeta. Cada uno saca la suya: la capa gratuita tiene un límite de pedidos por día y por clave, y si todo el curso usa la misma se agota en minutos.</p>
+  </div>
+  <div data-prov-show="openai">
+    <p><strong>Clave:</strong> la creás en <code class="in">platform.openai.com</code>. Es paga (centavos para todo el curso), así que necesita saldo cargado. Sirve también para cualquier servicio compatible con OpenAI (Groq, OpenRouter, etc.): cambiás <code class="in">URL_BASE</code> por la del servicio.</p>
+  </div>
+  <div data-prov-show="ollama">
+    <p><strong>Sin clave y sin internet:</strong> los modelos corren en tu compu. Instalá Ollama desde <code class="in">ollama.com</code> y bajá los dos modelos con <code class="in">ollama pull nomic-embed-text</code> y <code class="in">ollama pull llama3.2</code>. Necesita una compu con unos 8 GB de RAM libres, y las respuestas son más lentas y de menor calidad que en la nube.</p>
+  </div>
+  <p>Ahora, <strong>desde el editor</strong> (no desde la terminal), creá un archivo llamado <code class="in">.env</code> con el contenido que corresponde a tu proveedor. Los nombres de modelo de chat cambian seguido: si el docente dicta otro, usá el que dicta.</p>
+  <div data-prov-show="gemini"><script type="text/plain" data-codigo data-archivo=".env" data-tipo="completar">PROVEEDOR=gemini
+API_KEY=pegá-acá-tu-clave
+MODELO_EMBEDDINGS=gemini-embedding-001
+DIMENSIONES=1536
+MODELO_CHAT=gemini-3.5-flash-lite</script></div>
+  <div data-prov-show="openai"><script type="text/plain" data-codigo data-archivo=".env" data-tipo="completar">PROVEEDOR=openai
+API_KEY=pegá-acá-tu-clave
+URL_BASE=https://api.openai.com/v1
+MODELO_EMBEDDINGS=text-embedding-3-small
+DIMENSIONES=1536
+MODELO_CHAT=gpt-4o-mini</script></div>
+  <div data-prov-show="ollama"><script type="text/plain" data-codigo data-archivo=".env" data-tipo="completar">PROVEEDOR=openai
+API_KEY=ollama
+URL_BASE=http://localhost:11434/v1
+MODELO_EMBEDDINGS=nomic-embed-text
+DIMENSIONES=768
+MODELO_CHAT=llama3.2</script></div>
+  <div class="caja atencion"><span class="rot">Atención</span><p>Una vez que indexes el reglamento (paso 6), <strong>no cambies</strong> <code class="in">MODELO_EMBEDDINGS</code> ni <code class="in">DIMENSIONES</code>. Los vectores de un modelo no se pueden comparar con los de otro: sería como comparar coordenadas de dos mapas distintos. Si cambiás, hay que volver a indexar. El modelo de chat, en cambio, lo podés cambiar cuando quieras.</p></div>
+  <details class="teoria"><summary>Teoría: por qué Node y no el navegador</summary><div class="dentro">
+    <p>En la clase 5 todo corrió en el navegador porque no hablábamos con nadie de afuera. Hoy sí: le pedimos datos a un proveedor por internet, y el proveedor necesita saber quién le pide para cobrarle. Eso es la <strong>clave de API</strong>: una contraseña que viaja en cada pedido.</p>
+    <p>El código que corre en el navegador se le entrega entero al navegador. Cualquiera aprieta F12 y lo lee, clave incluida. No hay forma de esconderla ahí. En cambio, un programa de Node corre en tu compu (o en un servidor): el que usa el sistema ve las respuestas, no el código.</p>
+    <h4>Qué es el .env</h4>
+    <p>Un archivo de texto con pares <code class="in">NOMBRE=valor</code>. Cuando corrés <code class="in">node --env-file=.env</code>, Node lee ese archivo y deja cada valor disponible en <code class="in">process.env.NOMBRE</code>. Así la clave nunca aparece escrita en el código: el código dice "usá la clave que esté configurada", y cada uno configura la suya. Es la misma idea que se usa en cualquier sistema en producción.</p>
+  </div></details>
+  <p>Y un archivo <code class="in">.gitignore</code> con una sola línea, para que la clave nunca termine en un repositorio:</p>
+  <script type="text/plain" data-codigo data-archivo=".gitignore" data-tipo="se da hecho">.env</script>
+  <div class="caja atencion"><span class="rot">Atención</span><p>La clave es una contraseña: aunque sea de la capa gratuita, con ella cualquiera gasta tu cupo (y si es paga, tu plata). No la pegues en un chat, no la subas a GitHub, no la saques en una captura. Por eso existe el <code class="in">.env</code>: la clave queda en un archivo aparte que nunca se comparte, y el código la lee desde ahí.</p></div>
+  <details class="falla"><summary>Si algo falla</summary><div class="dentro"><dl>
+    <dt>code : no se reconoce el comando</dt><dd>No importa. Abrí VS Code a mano y usá Archivo → Abrir carpeta.</dd>
+    <dt>El archivo quedó como .env.txt</dt><dd>Windows escondió la extensión. En VS Code se ve el nombre real: renombralo a <code class="in">.env</code> exacto, con el punto adelante y sin nada después.</dd>
+  </dl></div></details>
+</section>
+
+<!-- PASO 2 -->
+<section class="paso" id="p2" data-titulo="Traer trocear">
+  <div class="paso-cab"><h2><span class="num">02</span>Traer trocear de la clase 5</h2><label class="listo"><input type="checkbox" id="chk-p2">Listo</label></div>
+  <p>Es tu misma función de la clase 5. Lo único que cambia es la palabra <code class="in">export</code> adelante, para que otros archivos la puedan usar. Si la tuya funcionaba, usá la tuya; si no, usá esta.</p>
+  <script type="text/plain" data-codigo data-archivo="trocear.mjs" data-tipo="se da hecho">export function trocear(texto, tamano = 800, solapamiento = 150) {
+  if (solapamiento >= tamano) {
+    throw new Error("el solapamiento no puede ser mayor o igual al tamaño");
+  }
+  const fragmentos = [];
+  let inicio = 0;
+  while (inicio < texto.length) {
+    const fin = Math.min(inicio + tamano, texto.length);
+    fragmentos.push({ id: fragmentos.length, inicio, fin, texto: texto.slice(inicio, fin) });
+    if (fin === texto.length) break;
+    inicio = fin - solapamiento;
+  }
+  return fragmentos;
+}</script>
+  <details class="teoria"><summary>Repaso: por qué troceamos</summary><div class="dentro">
+    <p>Pegar el reglamento entero en cada pregunta es caro (se paga en cada mensaje) y además funciona peor: los modelos aprovechan mal lo que queda en el medio de un texto largo. Por eso partimos el documento en fragmentos de 800 caracteres y le mandamos al modelo solo los que sirven.</p>
+    <p>El solapamiento de 150 caracteres está para que una respuesta que cae justo en un corte quede completa en al menos uno de los dos fragmentos. Hoy no cambia nada de esto: lo que cambia es <em>cómo elegimos</em> qué fragmentos mandar.</p>
+  </div></details>
+  <p>La extensión <code class="in">.mjs</code> le avisa a Node que el archivo usa <code class="in">import</code> y <code class="in">export</code>. Todos los archivos de hoy terminan así.</p>
+</section>
+
+<!-- PASO 3 -->
+<section class="paso" id="p3" data-titulo="Hablar con la API">
+  <div class="paso-cab"><h2><span class="num">03</span>Hablar con la API</h2><label class="listo"><input type="checkbox" id="chk-p3">Listo</label></div>
+  <p>Este archivo tiene las dos llamadas al proveedor: <code class="in">embedding</code> convierte un texto en su lista de números, y <code class="in">responder</code> le manda un prompt al modelo y trae la respuesta. Adentro de cada una hay dos caminos: uno para Google y otro para OpenAI y los compatibles. Se da hecho, pero leelo: son <code class="in">fetch</code> comunes, iguales a cualquier llamada a una API web.</p>
+  <script type="text/plain" data-codigo data-archivo="api.mjs" data-tipo="se da hecho">// Funciona con dos familias de proveedores:
+//   PROVEEDOR=gemini  -> API de Google AI Studio (tiene capa gratuita)
+//   PROVEEDOR=openai  -> OpenAI o cualquier servicio compatible
+//                        (Groq, OpenRouter, Ollama local, LM Studio...)
+const {
+  PROVEEDOR = "gemini",
+  API_KEY,
+  URL_BASE = "https://api.openai.com/v1",
+  MODELO_EMBEDDINGS,
+  MODELO_CHAT,
+  DIMENSIONES,
+} = process.env;
+
+if (!API_KEY) throw new Error("Falta API_KEY. ¿Corriste node con --env-file=.env?");
+if (!MODELO_EMBEDDINGS) throw new Error("Falta MODELO_EMBEDDINGS en el archivo .env");
+
+const GEMINI = "https://generativelanguage.googleapis.com/v1beta/models";
+
+// Hace el pedido HTTP. Si el proveedor dice "pará un poco" (429),
+// espera y reintenta hasta tres veces.
+async function pedir(url, cuerpo, encabezados, intento = 1) {
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...encabezados },
+    body: JSON.stringify(cuerpo),
+  });
+  if (res.status === 429 && intento <= 3) {
+    console.log(`  (límite de pedidos: espero ${10 * intento} segundos y reintento)`);
+    await new Promise(r => setTimeout(r, 10000 * intento));
+    return pedir(url, cuerpo, encabezados, intento + 1);
+  }
+  if (!res.ok) throw new Error(`La API respondió ${res.status}: ${await res.text()}`);
+  return res.json();
+}
+
+export async function embedding(texto) {
+  let vector;
+  if (PROVEEDOR === "gemini") {
+    const datos = await pedir(
+      `${GEMINI}/${MODELO_EMBEDDINGS}:embedContent`,
+      {
+        content: { parts: [{ text: texto }] },
+        ...(DIMENSIONES && { outputDimensionality: Number(DIMENSIONES) }),
+      },
+      { "x-goog-api-key": API_KEY },
+    );
+    vector = datos.embedding?.values ?? datos.embeddings?.[0]?.values;
+  } else {
+    const datos = await pedir(
+      `${URL_BASE}/embeddings`,
+      { model: MODELO_EMBEDDINGS, input: texto },
+      { "Authorization": `Bearer ${API_KEY}` },
+    );
+    vector = datos.data[0].embedding;
+  }
+  if (DIMENSIONES && vector.length !== Number(DIMENSIONES)) {
+    throw new Error(`El modelo devolvió ${vector.length} números y el .env dice DIMENSIONES=${DIMENSIONES}`);
+  }
+  return vector;
+}
+
+export async function responder(prompt) {
+  if (!MODELO_CHAT) throw new Error("Falta MODELO_CHAT en el archivo .env");
+  if (PROVEEDOR === "gemini") {
+    const datos = await pedir(
+      `${GEMINI}/${MODELO_CHAT}:generateContent`,
+      { contents: [{ role: "user", parts: [{ text: prompt }] }] },
+      { "x-goog-api-key": API_KEY },
+    );
+    const partes = datos.candidates?.[0]?.content?.parts;
+    if (!partes) throw new Error(`Respuesta vacía: ${JSON.stringify(datos)}`);
+    return partes.map(p => p.text).join("");
+  }
+  const datos = await pedir(
+    `${URL_BASE}/chat/completions`,
+    { model: MODELO_CHAT, messages: [{ role: "user", content: prompt }] },
+    { "Authorization": `Bearer ${API_KEY}` },
+  );
+  return datos.choices[0].message.content;
+}</script>
+  <details class="teoria"><summary>Teoría: un archivo que esconde al proveedor</summary><div class="dentro">
+    <p>Cada proveedor tiene su propia forma de pedir lo mismo: Google quiere la clave en un encabezado llamado <code class="in">x-goog-api-key</code> y el texto adentro de <code class="in">content.parts</code>; OpenAI quiere la clave como <code class="in">Bearer</code> y el texto en <code class="in">input</code>. Las respuestas también vienen con formas distintas.</p>
+    <p><code class="in">api.mjs</code> absorbe todas esas diferencias y hacia afuera ofrece siempre lo mismo: <code class="in">embedding(texto)</code> devuelve una lista de números y <code class="in">responder(prompt)</code> devuelve un texto. El resto del programa no sabe ni le importa con quién está hablando. A este patrón se lo llama <strong>adaptador</strong>, y es la razón por la que cambiar de proveedor es cambiar el <code class="in">.env</code>.</p>
+    <p>Muchos servicios (Groq, OpenRouter, Ollama, LM Studio) copiaron a propósito la forma de pedir de OpenAI para que el código existente les sirva. Por eso con un solo camino, cambiando <code class="in">URL_BASE</code>, se cubren casi todos.</p>
+    <h4>El 429 y los límites</h4>
+    <p>Las capas gratuitas limitan cuántos pedidos podés hacer por minuto y por día. Cuando te pasás del límite por minuto, la API responde con el código 429 ("demasiados pedidos"). La función <code class="in">pedir</code> espera unos segundos y reintenta. Si el límite que se agotó es el diario, esperar unos segundos no alcanza: hay que esperar al día siguiente o usar otra clave.</p>
+  </div></details>
+  <details class="teoria"><summary>Teoría: qué es un embedding</summary><div class="dentro">
+    <p>Pensá en un mapa. Cualquier ciudad se puede ubicar con dos números: latitud y longitud. Y esos dos números tienen una propiedad útil: ciudades cercanas tienen números parecidos. Santa Fe y Paraná quedan cerca en el mapa y cerca en los números; Santa Fe y Tokio, lejos en las dos cosas.</p>
+    <p>Un <strong>embedding</strong> hace lo mismo con el significado de un texto. Un modelo lee el texto y devuelve una lista de números que funciona como sus coordenadas en un "mapa de significados". Textos que hablan de lo mismo quedan cerca, aunque no compartan ninguna palabra. Esa es exactamente la falla de la clase 5: "faltar" y "ausencias" no tienen ni una letra en común, pero significan casi lo mismo.</p>
+    <h4>La diferencia con un mapa de verdad</h4>
+    <p>El mapa de la Tierra tiene dos dimensiones. El de significados tiene muchísimas más, porque el significado tiene muchas más "direcciones" en las que dos textos pueden parecerse o diferenciarse: el tema, el tono, si es una pregunta o una afirmación, y miles de matices más. Nadie puede dibujar ese mapa, pero las cuentas para medir distancias funcionan igual que en dos dimensiones.</p>
+    <p>Un detalle que sorprende: ninguno de esos números, por separado, significa algo que una persona pueda nombrar. No hay un número que sea "habla de exámenes". El significado está en la combinación de todos, como la ubicación de una ciudad está en la combinación de latitud y longitud.</p>
+    <h4>De dónde sale</h4>
+    <p>El modelo de embeddings es una red neuronal entrenada con enormes cantidades de texto. Durante el entrenamiento aprende a ubicar cerca los textos que aparecen en contextos parecidos. La idea de fondo es vieja y es de la lingüística, no de la computación: las palabras que se usan en los mismos contextos tienden a significar cosas parecidas.</p>
+    <div class="cita">"Conocerás una palabra por la compañía que frecuenta."<small>J. R. Firth, lingüista, 1957. La misma idea la había formulado Z. Harris en 1954, y es la que vimos al final de la clase 4.</small></div>
+    <h4>Qué pasa en el fetch</h4>
+    <p>Mandamos un pedido HTTP a la API del proveedor con el texto y el nombre del modelo. El proveedor corre el modelo en sus servidores y nos devuelve un JSON con la lista de números adentro. En los planes pagos se cobra según la cantidad de tokens que mandamos, y los embeddings son de lo más barato que existe: indexar el reglamento entero sale una fracción de centavo de dólar. En la capa gratuita no se paga, pero se cuentan los pedidos.</p>
+  </div></details>
+  <div class="caja cuaderno"><span class="rot">Para tu cuaderno · antes de correr</span><p>Vas a pedir el embedding de la palabra <em>hola</em>, y tu <code class="in">.env</code> dice cuántos números van a volver. Anotá: si en lugar de <em>hola</em> mandaras el reglamento entero, ¿volverían más números, menos, o los mismos? ¿Por qué?</p></div>
+  <p>Ahora sí, creá este archivo de prueba y corrélo:</p>
+  <script type="text/plain" data-codigo data-archivo="prueba.mjs" data-tipo="se da hecho">import { embedding } from "./api.mjs";
+
+const v = await embedding("hola");
+console.log("Cantidad de números:", v.length);
+console.log("Los primeros cinco:", v.slice(0, 5));</script>
+  <script type="text/plain" data-codigo data-archivo="terminal" data-tipo="comando">node --env-file=.env prueba.mjs</script>
+  <div class="caja verif"><span class="rot">Verificación</span><p>Tiene que imprimir una cantidad y cinco números decimales chicos, positivos y negativos. Si imprime eso, la clave funciona y ya hablaste con la API. Compará la cantidad con lo que anotaste.</p></div>
+  <details class="falla"><summary>Si algo falla</summary><div class="dentro"><dl>
+    <dt>Error: Falta API_KEY</dt><dd>Te olvidaste <code class="in">--env-file=.env</code> en el comando, o el archivo no se llama exactamente <code class="in">.env</code>, o no está en la misma carpeta desde donde corrés.</dd>
+    <dt>La API respondió 400 (API_KEY_INVALID) / 401 / 403</dt><dd>La clave está mal copiada o es de otro proveedor. Revisá que no tenga espacios ni comillas alrededor en el <code class="in">.env</code>, y que <code class="in">PROVEEDOR</code> coincida con donde sacaste la clave.</dd>
+    <dt>La API respondió 404</dt><dd>El nombre del modelo está mal escrito o ese modelo ya no existe. Revisá <code class="in">MODELO_EMBEDDINGS</code> o <code class="in">MODELO_CHAT</code> contra la lista de modelos del proveedor.</dd>
+    <dt>La API respondió 429 después de los reintentos</dt><dd>Se agotó el cupo diario de la capa gratuita. No se arregla esperando un minuto: avisale al docente, que tiene una clave de reserva.</dd>
+    <dt>El modelo devolvió 3072 números y el .env dice DIMENSIONES=1536</dt><dd>Falta o está mal la línea <code class="in">DIMENSIONES</code>, o el modelo no acepta elegir dimensión. Con Ollama poné la dimensión que devuelve tu modelo.</dd>
+    <dt>fetch failed / ECONNREFUSED 127.0.0.1:11434</dt><dd>Con Ollama: el programa de Ollama no está abierto. Abrilo y probá de nuevo.</dd>
+    <dt>fetch failed / ENOTFOUND</dt><dd>No hay internet o la red de la facultad bloquea la API. Probá con los datos del celular.</dd>
+    <dt>SyntaxError: Cannot use import statement outside a module</dt><dd>El archivo terminó en <code class="in">.js</code> en vez de <code class="in">.mjs</code>.</dd>
+  </dl></div></details>
+</section>
+
+<!-- PASO 4 -->
+<section class="paso" id="p4" data-titulo="Programar el coseno">
+  <div class="paso-cab"><h2><span class="num">04</span>Programar la similitud coseno</h2><label class="listo"><input type="checkbox" id="chk-p4">Listo</label></div>
+  <p>Ya podés convertir un texto en una lista de números. Falta lo central: una función que mire dos listas y diga cuánto se parecen. Antes del código, jugá con esto. Son dos vectores de dos números; los de hoy tienen mil quinientos, pero la cuenta es la misma.</p>
+
+  <div class="widget" aria-label="Simulador de similitud coseno">
+    <svg viewBox="-110 -110 220 220" role="img" aria-label="Dos flechas desde el origen">
+      <circle cx="0" cy="0" r="100" fill="none" stroke="var(--linea)" stroke-width="1"/>
+      <line x1="-105" y1="0" x2="105" y2="0" stroke="var(--linea)" stroke-width="1"/>
+      <line x1="0" y1="-105" x2="0" y2="105" stroke="var(--linea)" stroke-width="1"/>
+      <path id="arco" fill="none" stroke="var(--marron)" stroke-width="1.5" stroke-dasharray="3 3"/>
+      <line id="vecA" x1="0" y1="0" stroke="var(--tinta)" stroke-width="3" stroke-linecap="round"/>
+      <circle id="puntaA" r="5" fill="var(--tinta)"/>
+      <line id="vecB" x1="0" y1="0" stroke="var(--marron)" stroke-width="3" stroke-linecap="round"/>
+      <circle id="puntaB" r="5" fill="var(--marron)"/>
+    </svg>
+    <div class="ctrl">
+      <label for="angA">Dirección de A <input type="range" id="angA" min="0" max="360" value="30"></label>
+      <label for="angB">Dirección de B <input type="range" id="angB" min="0" max="360" value="70"></label>
+      <label for="largoB">Largo de B <input type="range" id="largoB" min="20" max="100" value="100"></label>
+      <div><div class="valor" id="valorCos">0,000</div><div class="lectura" id="lecturaCos"></div></div>
+    </div>
+  </div>
+  <div class="caja cuaderno"><span class="rot">Para tu cuaderno</span><p>Movelos un rato y contestá: ¿qué valor da cuando apuntan para el mismo lado? ¿Y en ángulo recto? ¿Y para lados opuestos? ¿Cambia el valor si achicás el largo de B?</p></div>
+
+  <details class="teoria"><summary>Teoría: la similitud coseno sin miedo <span class="cuando">· abrila después de jugar con el simulador</span></summary><div class="dentro">
+    <h4>Un vector es una flecha</h4>
+    <p>Una lista de números se puede pensar como una flecha que sale del origen. Con dos números, <code class="in">[3, 4]</code>, es una flecha que va 3 a la derecha y 4 para arriba. Con 1536 números es lo mismo, en un espacio que no podemos dibujar.</p>
+    <h4>Lo que importa es para dónde apunta</h4>
+    <p>Cada flecha tiene dos cosas: una <strong>dirección</strong> (para dónde apunta) y un <strong>largo</strong>. En los embeddings, la dirección es lo que representa el significado. Por eso la medida que usamos mira solo el ángulo entre las dos flechas e ignora el largo, que es lo que viste al mover el tercer control del simulador.</p>
+    <div class="mini-tabla"><table>
+      <thead><tr><th>Ángulo entre las flechas</th><th>Coseno</th><th>Se lee como</th></tr></thead>
+      <tbody>
+        <tr><td>0° (mismo lado)</td><td>1</td><td>mismo significado</td></tr>
+        <tr><td>90° (ángulo recto)</td><td>0</td><td>no tienen nada que ver</td></tr>
+        <tr><td>180° (lados opuestos)</td><td>-1</td><td>opuestos</td></tr>
+      </tbody>
+    </table></div>
+    <h4>Ojo: "largo" y "dimensión" no son lo mismo</h4>
+    <p>El <strong>largo de la flecha</strong> es cuánto mide (se calcula con Pitágoras): el coseno lo ignora. La <strong>dimensión</strong> es cuántos números tiene la lista: [3, 4] tiene dimensión 2, [1, 2, 2] tiene dimensión 3. Para comparar dos vectores, la dimensión sí tiene que ser la misma, porque la cuenta multiplica posición por posición y a ninguna posición le puede faltar su pareja.</p>
+    <h4>Cómo se calcula, en criollo</h4>
+    <p>Son dos ingredientes, los dos con sumas y multiplicaciones:</p>
+    <ol>
+      <li><strong>Producto punto:</strong> multiplicás los dos vectores posición por posición y sumás todo. Para <code class="in">[1, 2]</code> y <code class="in">[3, 4]</code> es 1×3 + 2×4 = 11. Da grande cuando los dos vectores tienen valores grandes en las mismas posiciones, o sea cuando "apuntan parecido".</li>
+      <li><strong>Norma (el largo de la flecha):</strong> elevás cada número al cuadrado, sumás y sacás raíz. Es el teorema de Pitágoras: la norma de <code class="in">[3, 4]</code> es √(9 + 16) = 5.</li>
+    </ol>
+    <p>El producto punto solo tiene un problema: también crece si las flechas son largas. Para sacarle ese efecto, se lo divide por los dos largos. Lo que queda depende solo del ángulo, y eso es el coseno.</p>
+    <div class="cita" style="font-style:normal; font-family: var(--f-mono); font-size: 14px;">coseno = producto punto ÷ (norma de a × norma de b)</div>
+    <p>No hace falta saber trigonometría para usarla. Alcanza con saber leer el resultado: más cerca de 1, más parecido el significado.</p>
+  </div></details>
+  <div class="caja espec"><span class="rot">Especificación</span>
+    <p><strong>coseno(a, b)</strong></p>
+    <dl>
+      <dt>Qué hace</dt><dd>Mide cuánto apuntan para el mismo lado dos vectores, sin importar el largo de la flecha.</dd>
+      <dt>Entrada</dt><dd>Dos arreglos de números de la misma dimensión, es decir, con la misma cantidad de números.</dd>
+      <dt>Salida</dt><dd>Un número entre -1 y 1.</dd>
+      <dt>Fórmula</dt><dd>producto punto ÷ (norma de a × norma de b). El producto punto es la suma de <code class="in">a[i] * b[i]</code>. La norma de un vector es la raíz cuadrada de la suma de cada número al cuadrado.</dd>
+      <dt>Guarda</dt><dd>Si los dos vectores no tienen la misma dimensión, tira error. Ojo: no es el largo de la flecha (ese el coseno lo ignora), sino cuántos números tiene cada lista. Un vector de 1536 números y uno de 768 viven en espacios distintos y no se pueden comparar.</dd>
+    </dl>
+  </div>
+  <script type="text/plain" data-codigo data-archivo="similitud.mjs" data-tipo="completá el TODO">export function coseno(a, b) {
+  if (a.length !== b.length) {
+    throw new Error(`Los vectores tienen distinta dimensión: ${a.length} y ${b.length} números`);
+  }
+  let producto = 0, normaA = 0, normaB = 0;
+
+  // TODO 1: recorrer los dos vectores con un for y acumular
+  //         producto (a[i] * b[i]), normaA (a[i] al cuadrado)
+  //         y normaB (b[i] al cuadrado).
+
+  // TODO 2: devolver producto dividido por el producto
+  //         de las raíces cuadradas de normaA y normaB.
+}</script>
+  <details class="solucion"><summary>Ver pista</summary><div class="dentro">
+    <p>Dentro del <code class="in">for</code>, en cada vuelta se suman tres cosas: <code class="in">a[i] * b[i]</code> a <code class="in">producto</code>, <code class="in">a[i] * a[i]</code> a <code class="in">normaA</code> y <code class="in">b[i] * b[i]</code> a <code class="in">normaB</code>. Después del <code class="in">for</code> va un solo <code class="in">return</code>, con <code class="in">Math.sqrt</code> aplicado a cada norma por separado.</p>
+  </div></details>
+  <details class="solucion"><summary>Ver solución</summary><div class="dentro">
+    <p class="aviso">Probá primero con la pista. Si la copiás sin entenderla, el paso 7 se complica.</p>
+    <script type="text/plain" data-codigo data-archivo="similitud.mjs · solución" data-tipo="solución">export function coseno(a, b) {
+  if (a.length !== b.length) {
+    throw new Error(`Los vectores tienen distinta dimensión: ${a.length} y ${b.length} números`);
+  }
+  let producto = 0, normaA = 0, normaB = 0;
+
+  for (let i = 0; i < a.length; i++) {
+    producto += a[i] * b[i];   // producto punto
+    normaA += a[i] * a[i];     // suma de cuadrados de a
+    normaB += b[i] * b[i];     // suma de cuadrados de b
+  }
+
+  return producto / (Math.sqrt(normaA) * Math.sqrt(normaB));
+}</script>
+  </div></details>
+  <p>Para probarla sin gastar ni una llamada a la API, usá vectores que podés calcular a mano:</p>
+  <script type="text/plain" data-codigo data-archivo="probar-coseno.mjs" data-tipo="se da hecho">import { coseno } from "./similitud.mjs";
+
+console.log(coseno([1, 0], [1, 0]));   // mismo lado
+console.log(coseno([1, 0], [0, 1]));   // ángulo recto
+console.log(coseno([1, 0], [-1, 0]));  // lados opuestos
+console.log(coseno([1, 2], [2, 4]));   // mismo lado, flecha más larga</script>
+  <script type="text/plain" data-codigo data-archivo="terminal" data-tipo="comando">node probar-coseno.mjs</script>
+  <div class="caja verif"><span class="rot">Verificación</span><p>Los cuatro resultados tienen que coincidir con lo que viste en el simulador para cada caso. El último puede salir <code class="in">0.9999999999999998</code> en lugar de <code class="in">1</code>: es redondeo de punto flotante y está bien.</p></div>
+  <details class="falla"><summary>Si algo falla</summary><div class="dentro"><dl>
+    <dt>Imprime undefined</dt><dd>Falta el <code class="in">return</code> del TODO 2.</dd>
+    <dt>Imprime NaN</dt><dd>Alguna norma quedó en cero, o la división quedó con la raíz aplicada a una sola norma. Revisá los paréntesis.</dd>
+    <dt>Da números mayores que 1</dt><dd>No estás dividiendo por las normas, o te falta la raíz cuadrada.</dd>
+  </dl></div></details>
+</section>
+
+<!-- PASO 5 -->
+<section class="paso" id="p5" data-titulo="Explorar significados">
+  <div class="paso-cab"><h2><span class="num">05</span>Explorar qué queda cerca de qué</h2><label class="listo"><input type="checkbox" id="chk-p5">Listo</label></div>
+  <p>Ahora juntás las dos piezas: embeddings de verdad y tu coseno. Antes de correr, predecí.</p>
+  <div class="caja cuaderno"><span class="rot">Ficha 1 · predicción, antes de correr</span>
+    <p>Ordená estos seis pares del más parecido al menos parecido, según lo que creés que va a dar. No corras nada todavía.</p>
+    <div class="tabla-scroll"><table>
+      <thead><tr><th>Par</th><th>Tu orden (1 a 6)</th><th>Similitud real</th></tr></thead>
+      <tbody>
+        <tr><td>faltar a clase · ausencias</td><td class="vacio"></td><td class="vacio"></td></tr>
+        <tr><td>faltar a clase · calificación de un examen</td><td class="vacio"></td><td class="vacio"></td></tr>
+        <tr><td>quedar libre · perder la regularidad</td><td class="vacio"></td><td class="vacio"></td></tr>
+        <tr><td>parcial (examen) · reconocimiento parcial de equivalencias</td><td class="vacio"></td><td class="vacio"></td></tr>
+        <tr><td>perro · gato</td><td class="vacio"></td><td class="vacio"></td></tr>
+        <tr><td>perro · reglamento de alumnos</td><td class="vacio"></td><td class="vacio"></td></tr>
+      </tbody>
+    </table></div>
+  </div>
+  <script type="text/plain" data-codigo data-archivo="explorar.mjs" data-tipo="se da hecho">import { embedding } from "./api.mjs";
+import { coseno } from "./similitud.mjs";
+
+const pares = [
+  ["faltar a clase", "ausencias"],
+  ["faltar a clase", "calificación de un examen"],
+  ["quedar libre", "perder la regularidad"],
+  ["parcial (examen)", "reconocimiento parcial de equivalencias"],
+  ["perro", "gato"],
+  ["perro", "reglamento de alumnos"],
+];
+
+for (const [a, b] of pares) {
+  const va = await embedding(a);
+  const vb = await embedding(b);
+  console.log(`${coseno(va, vb).toFixed(3)}   "${a}"  vs  "${b}"`);
+}</script>
+  <script type="text/plain" data-codigo data-archivo="terminal" data-tipo="comando">node --env-file=.env explorar.mjs</script>
+  <div class="caja cuaderno"><span class="rot">Ficha 1 · después de correr</span><p>Completá la columna de similitud real. ¿Dónde acertaste el orden y dónde no? Mirá los dos pares que en la clase 5 tenían cero palabras en común: ¿qué número sacaron? Y fijate en el valor más bajo de todos: ¿se acerca a cero, o queda bastante arriba?</p></div>
+  <details class="teoria"><summary>Teoría: búsqueda por significado contra búsqueda por palabras <span class="cuando">· abrila después de completar la ficha</span></summary><div class="dentro">
+    <p>En la clase 5 el buscador comparaba letras: si la palabra no estaba escrita igual, no existía. Por eso "faltar" nunca encontraba "ausencias", y "parcial" de examen se confundía con "parcial" de equivalencias.</p>
+    <p>Con embeddings se compara otra cosa: lo que el texto quiere decir. A esto se lo llama <strong>búsqueda semántica</strong> (semántica es la parte de la lingüística que estudia el significado). Las dos fallas de la clase 5 tienen arreglo con la misma herramienta:</p>
+    <div class="mini-tabla"><table>
+      <thead><tr><th>Falla de la clase 5</th><th>Por qué los embeddings la arreglan</th></tr></thead>
+      <tbody>
+        <tr><td>Sinónimos: "faltar" no encuentra "ausencias"</td><td>Palabras distintas con el mismo significado quedan cerca en el mapa.</td></tr>
+        <tr><td>Ambigüedad: "parcial" de examen trae "parcial" de equivalencias</td><td>El embedding se calcula sobre la frase entera, y el resto de la frase indica de qué "parcial" se habla.</td></tr>
+      </tbody>
+    </table></div>
+    <p>Los números exactos de similitud no se comparan entre modelos distintos: cada modelo tiene su propia escala. Lo que importa es el orden, quién queda más cerca de quién.</p>
+  </div></details>
+  <details class="falla"><summary>Si algo falla</summary><div class="dentro"><dl>
+    <dt>Los vectores tienen distinta dimensión</dt><dd>No debería pasar acá, porque todos los embeddings salen del mismo modelo. Si pasa, se mezclaron dos modelos de embeddings o dos valores de DIMENSIONES: avisale al docente.</dd>
+    <dt>Tarda varios segundos</dt><dd>Es normal: son doce llamadas a la API, una detrás de otra.</dd>
+  </dl></div></details>
+</section>
+
+<!-- PASO 6 -->
+<section class="paso" id="p6" data-titulo="Indexar el reglamento">
+  <div class="paso-cab"><h2><span class="num">06</span>Indexar el reglamento</h2><label class="listo"><input type="checkbox" id="chk-p6">Listo</label></div>
+  <p>Ahora el reglamento entero: lo troceás, pedís el embedding de cada fragmento y guardás todo en un archivo. Ese archivo es el índice.</p>
+  <script type="text/plain" data-codigo data-archivo="indexar.mjs" data-tipo="se da hecho">import { readFile, writeFile } from "node:fs/promises";
+import { trocear } from "./trocear.mjs";
+import { embedding } from "./api.mjs";
+
+const corpus = await readFile("reglamento.txt", "utf8");
+const fragmentos = trocear(corpus, 800, 150);
+console.log(`${fragmentos.length} fragmentos. Pidiendo embeddings...`);
+
+const indice = [];
+for (const f of fragmentos) {
+  const vector = await embedding(f.texto);
+  indice.push({ ...f, vector });
+  console.log(`  fragmento ${f.id} listo (${vector.length} números)`);
+}
+
+await writeFile("indice.json", JSON.stringify(indice));
+console.log("Índice guardado en indice.json");</script>
+  <script type="text/plain" data-codigo data-archivo="terminal" data-tipo="comando">node --env-file=.env indexar.mjs</script>
+  <div class="caja verif"><span class="rot">Verificación</span><p>La cantidad de fragmentos tiene que ser la misma que te dio <code class="in">trocear</code> en la clase 5. Al terminar aparece <code class="in">indice.json</code> en la carpeta. Mirá cuánto pesa:</p></div>
+  <div data-os-show="win"><script type="text/plain" data-codigo data-archivo="terminal" data-tipo="comando">dir indice.json, reglamento.txt</script></div>
+  <div data-os-show="unix"><script type="text/plain" data-codigo data-archivo="terminal" data-tipo="comando">ls -lh indice.json reglamento.txt</script></div>
+  <div class="caja cuaderno"><span class="rot">Para tu cuaderno</span><p>¿Cuántas veces más pesa el índice que el reglamento? ¿De dónde sale tanta diferencia? Y una pregunta de diseño: ¿por qué guardamos el índice en un archivo en lugar de pedir los embeddings cada vez que alguien pregunta?</p></div>
+  <details class="teoria"><summary>Teoría: los dos momentos de un RAG <span class="cuando">· abrila después de contestar en el cuaderno</span></summary><div class="dentro">
+    <p>Todo sistema de este tipo trabaja en dos momentos separados, y conviene no mezclarlos:</p>
+    <div class="mini-tabla"><table>
+      <thead><tr><th></th><th>Indexar</th><th>Consultar</th></tr></thead>
+      <tbody>
+        <tr><td>Cuándo</td><td>Una vez, o cada vez que cambia el documento</td><td>Cada vez que alguien pregunta</td></tr>
+        <tr><td>Qué hace</td><td>Trocea y calcula el embedding de cada fragmento</td><td>Calcula el embedding de la pregunta y busca los más cercanos</td></tr>
+        <tr><td>Llamadas a la API</td><td>Una por fragmento</td><td>Una para la pregunta, una para responder</td></tr>
+        <tr><td>Nuestro archivo</td><td>indexar.mjs</td><td>preguntar.mjs</td></tr>
+      </tbody>
+    </table></div>
+    <p>Un <strong>índice</strong> es un trabajo hecho de antemano para que buscar después sea rápido, como el índice de un libro: alguien ya anotó en qué página está cada tema para que vos no tengas que leer el libro entero.</p>
+    <h4>Por qué pesa tanto</h4>
+    <p>Cada fragmento de 800 caracteres se guarda junto con su vector de 1536 números, y en JSON cada número se escribe como texto, con unos veinte caracteres por número. El vector ocupa mucho más que el texto que representa. Con un reglamento no importa; con miles de documentos sí, y es una de las razones por las que en la clase 8 esto pasa a una base de datos preparada para guardar vectores.</p>
+  </div></details>
+  <div class="caja atencion"><span class="rot">Atención</span><p>Este paso se corre una sola vez. Cada corrida vuelve a pagar todos los embeddings. Si cambiás el reglamento o el tamaño de los fragmentos, ahí sí hay que volver a indexar.</p></div>
+</section>
+
+<!-- PASO 7 -->
+<section class="paso" id="p7" data-titulo="Buscar por significado">
+  <div class="paso-cab"><h2><span class="num">07</span>Buscar por significado</h2><label class="listo"><input type="checkbox" id="chk-p7">Listo</label></div>
+  <p>Es el reemplazo de tu <code class="in">buscar</code> de la clase 5. Misma idea, otro puntaje: en lugar de contar palabras, compara el vector de la pregunta contra el de cada fragmento. Agregala al final de <code class="in">similitud.mjs</code>, debajo de <code class="in">coseno</code>.</p>
+  <div class="caja espec"><span class="rot">Especificación</span>
+    <p><strong>buscarPorSignificado(vectorPregunta, indice, k)</strong></p>
+    <dl>
+      <dt>Qué hace</dt><dd>Calcula la similitud coseno entre la pregunta y cada fragmento del índice, y devuelve los k más parecidos.</dd>
+      <dt>Entrada</dt><dd>vectorPregunta (el embedding de la pregunta), indice (el arreglo de indice.json), k (por omisión 3).</dd>
+      <dt>Salida</dt><dd>Los k fragmentos con mayor similitud, de mayor a menor, cada uno con id, similitud y texto.</dd>
+    </dl>
+  </div>
+  <script type="text/plain" data-codigo data-archivo="similitud.mjs (al final)" data-tipo="completá el TODO">export function buscarPorSignificado(vectorPregunta, indice, k = 3) {
+  return indice
+    .map(f => ({
+      id: f.id,
+      // TODO 1: calcular la similitud entre la pregunta y f.vector
+      similitud: ...,
+      texto: f.texto,
+    }))
+    // TODO 2: ordenar de mayor a menor similitud
+    //         y quedarse con los primeros k.
+    ...;
+}</script>
+  <details class="solucion"><summary>Ver pista</summary><div class="dentro">
+    <p>TODO 1 es una llamada a la función que programaste en el paso 4, con el vector de la pregunta y el del fragmento. TODO 2 son dos métodos de arreglo encadenados: <code class="in">.sort()</code> con una función que compara dos elementos, y <code class="in">.slice()</code> para quedarte con los primeros. Ojo con el orden del sort: lo querés de <strong>mayor a menor</strong>.</p>
+  </div></details>
+  <details class="solucion"><summary>Ver solución</summary><div class="dentro">
+    <p class="aviso">Probá primero con la pista. Es casi igual a tu <code class="in">buscar</code> de la clase 5.</p>
+    <script type="text/plain" data-codigo data-archivo="similitud.mjs (al final) · solución" data-tipo="solución">export function buscarPorSignificado(vectorPregunta, indice, k = 3) {
+  return indice
+    .map(f => ({
+      id: f.id,
+      similitud: coseno(vectorPregunta, f.vector),
+      texto: f.texto,
+    }))
+    .sort((x, y) => y.similitud - x.similitud)  // de mayor a menor
+    .slice(0, k);                               // los primeros k
+}</script>
+  </div></details>
+  <details class="teoria"><summary>Teoría: buscar comparando contra todos</summary><div class="dentro">
+    <p>Lo que vas a programar es la forma más simple de búsqueda por vectores: comparar la pregunta contra <em>todos</em> los fragmentos, uno por uno, y quedarse con los mejores. Se llama <strong>búsqueda exhaustiva</strong> o "por fuerza bruta", y con una veintena de fragmentos tarda menos de un milisegundo.</p>
+    <p>El problema aparece con escala. Con un millón de fragmentos son un millón de cosenos de 1536 números por cada pregunta. Por eso las bases de datos de vectores usan índices especiales que encuentran "casi seguro" los más cercanos sin mirarlos a todos, a cambio de que muy de vez en cuando se les escape alguno. Ese tipo de índice lo vas a usar en la clase 8.</p>
+    <h4>Top-k</h4>
+    <p>La <strong>k</strong> es cuántos resultados devolvemos. Con k chico, el modelo recibe poco texto y puede faltarle información. Con k grande, recibe más contexto pero también más ruido, y se vuelve al problema de pegar todo. Tres es un punto de partida razonable para un documento como este.</p>
+  </div></details>
+  <div class="caja todo-caja"><span class="rot">Comparalo con la clase 5</span><p>En tu <code class="in">buscar</code> viejo había un filtro que descartaba los de puntaje cero. Acá no lo pongas. Al final de la guía vas a ver por qué importa esa diferencia.</p></div>
+</section>
+
+<!-- PASO 8 -->
+<section class="paso" id="p8" data-titulo="El sistema completo">
+  <div class="paso-cab"><h2><span class="num">08</span>El sistema completo</h2><label class="listo"><input type="checkbox" id="chk-p8">Listo</label></div>
+  <p>Dos archivos más. El primero es el prompt de la clase 5, sin cambios, guardado aparte para poder editarlo sin tocar código:</p>
+  <script type="text/plain" data-codigo data-archivo="prompt.txt" data-tipo="se da hecho">Sos un asistente que responde consultas sobre el reglamento de alumnos de una facultad.
+
+Respondé usando EXCLUSIVAMENTE los fragmentos del reglamento que aparecen más abajo. No uses ningún conocimiento propio. Si los fragmentos no contienen la respuesta, respondé exactamente: "El reglamento no lo especifica."
+
+Formato de la respuesta:
+- Una respuesta breve, de dos oraciones como máximo.
+- Después, el renglón "Fuente:" con el número de artículo del que sacaste la respuesta.
+
+FRAGMENTOS:
+{{fragmentos}}
+
+PREGUNTA:
+{{pregunta}}</script>
+  <p>El segundo arma el circuito entero: embedding de la pregunta, búsqueda, prompt y respuesta.</p>
+  <details class="teoria"><summary>Teoría: qué es exactamente un RAG</summary><div class="dentro">
+    <p>RAG es la sigla en inglés de <em>Retrieval-Augmented Generation</em>, generación aumentada con recuperación. Las tres palabras describen las tres partes de lo que armaste:</p>
+    <div class="mini-tabla"><table>
+      <thead><tr><th>Parte</th><th>Qué significa</th><th>En tu código</th></tr></thead>
+      <tbody>
+        <tr><td>Recuperación</td><td>Buscar en una fuente propia los pedazos que sirven</td><td>buscarPorSignificado</td></tr>
+        <tr><td>Aumentada</td><td>Pegar esos pedazos en la entrada del modelo</td><td>el prompt con {{fragmentos}}</td></tr>
+        <tr><td>Generación</td><td>Que el modelo escriba la respuesta</td><td>responder</td></tr>
+      </tbody>
+    </table></div>
+    <p>La técnica se publicó con ese nombre en 2020, en un trabajo de Lewis y otros investigadores. Hoy es la forma más común de hacer que un modelo conteste sobre documentos que no vio durante su entrenamiento: manuales internos, normativas, historias clínicas, la documentación de una empresa.</p>
+    <h4>Lo importante: el modelo nunca ve el reglamento</h4>
+    <p>El modelo de chat no sabe que existe un reglamento. Solo ve tres fragmentos y una pregunta. Si la búsqueda trae los fragmentos equivocados, el modelo va a responder sobre los equivocados, con la misma seguridad. Por eso la calidad de un RAG depende más de la búsqueda que del modelo, y por eso el prompt le exige citar el artículo: para que vos puedas ir a verificar.</p>
+  </div></details>
+  <script type="text/plain" data-codigo data-archivo="preguntar.mjs" data-tipo="se da hecho">import { readFile } from "node:fs/promises";
+import { embedding, responder } from "./api.mjs";
+import { buscarPorSignificado } from "./similitud.mjs";
+
+const PLANTILLA = await readFile("prompt.txt", "utf8");
+const indice = JSON.parse(await readFile("indice.json", "utf8"));
+
+const pregunta = process.argv[2];
+if (!pregunta) {
+  console.log('Uso: node --env-file=.env preguntar.mjs "tu pregunta"');
+  process.exit(1);
+}
+
+const vectorPregunta = await embedding(pregunta);
+const resultados = buscarPorSignificado(vectorPregunta, indice, 3);
+
+console.log("\nFRAGMENTOS RECUPERADOS");
+for (const r of resultados) {
+  const inicio = r.texto.slice(0, 70).replace(/\s+/g, " ");
+  console.log(`  #${r.id}  similitud ${r.similitud.toFixed(3)}  "${inicio}..."`);
+}
+
+const fragmentos = resultados
+  .map(r => `--- fragmento ${r.id} ---\n${r.texto}`)
+  .join("\n\n");
+const prompt = PLANTILLA
+  .replace("{{fragmentos}}", fragmentos)
+  .replace("{{pregunta}}", pregunta);
+
+// con --sin-modelo solo muestra la búsqueda, sin gastar la llamada al modelo
+if (process.argv.includes("--sin-modelo")) process.exit(0);
+
+console.log("\nRESPUESTA");
+console.log(await responder(prompt));</script>
+  <p>Primero probá solo la búsqueda, con las cuatro preguntas de tu Ficha 2 de la clase 5. Por ejemplo:</p>
+  <script type="text/plain" data-codigo data-archivo="terminal" data-tipo="comando">node --env-file=.env preguntar.mjs "cuánto puedo faltar para no quedar libre" --sin-modelo</script>
+  <div class="caja cuaderno"><span class="rot">Ficha 2 · las mismas cuatro preguntas</span>
+    <p>Copiá de la clase 5 lo que había devuelto el buscador por palabras, y al lado lo que devuelve hoy. Abrí el reglamento y fijate si el fragmento que sale primero tiene la respuesta.</p>
+    <div class="tabla-scroll"><table>
+      <thead><tr><th>#</th><th>Pregunta</th><th>Clase 5: ¿encontró?</th><th>Hoy: id y similitud del primero</th><th>Hoy: ¿tiene la respuesta?</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td class="vacio"></td><td class="vacio"></td><td class="vacio"></td><td class="vacio"></td></tr>
+        <tr><td>2</td><td class="vacio"></td><td class="vacio"></td><td class="vacio"></td><td class="vacio"></td></tr>
+        <tr><td>3</td><td class="vacio"></td><td class="vacio"></td><td class="vacio"></td><td class="vacio"></td></tr>
+        <tr><td>4</td><td class="vacio"></td><td class="vacio"></td><td class="vacio"></td><td class="vacio"></td></tr>
+      </tbody>
+    </table></div>
+  </div>
+  <p>Después, la misma pregunta sin <code class="in">--sin-modelo</code>, para ver la respuesta completa:</p>
+  <script type="text/plain" data-codigo data-archivo="terminal" data-tipo="comando">node --env-file=.env preguntar.mjs "con cuánto apruebo un parcial"</script>
+  <div class="caja verif"><span class="rot">Verificación</span><p>La respuesta tiene que venir en dos oraciones como máximo y con un renglón <code class="in">Fuente:</code> que nombra un artículo. Andá al reglamento y comprobá que ese artículo dice lo que el modelo dijo.</p></div>
+  <details class="falla"><summary>Si algo falla</summary><div class="dentro"><dl>
+    <dt>ENOENT: no such file or directory, open 'indice.json'</dt><dd>No corriste el paso 6, o lo corriste desde otra carpeta.</dd>
+    <dt>buscarPorSignificado is not a function / does not provide an export</dt><dd>Te falta el <code class="in">export</code> adelante de la función en <code class="in">similitud.mjs</code>.</dd>
+    <dt>Cannot read properties of undefined (reading 'toFixed')</dt><dd>El objeto que arma tu <code class="in">map</code> no tiene la propiedad <code class="in">similitud</code>, o tiene otro nombre.</dd>
+    <dt>Devuelve más de 3 fragmentos</dt><dd>Falta el recorte a k en el TODO 2.</dd>
+    <dt>Los primeros son los de similitud más baja</dt><dd>El orden quedó al revés: en el <code class="in">sort</code>, restá en el otro sentido.</dd>
+    <dt>Falta MODELO_CHAT en el archivo .env</dt><dd>Agregá la línea con el modelo que dictó el docente.</dd>
+  </dl></div></details>
+</section>
+
+<!-- PASO 9 -->
+<section class="paso" id="p9" data-titulo="Una pregunta que no está">
+  <div class="paso-cab"><h2><span class="num">09</span>Una pregunta que no está</h2><label class="listo"><input type="checkbox" id="chk-p9">Listo</label></div>
+  <p>El último experimento. Hacé una pregunta cuya respuesta no está en ninguna parte del reglamento. Primero solo la búsqueda:</p>
+  <script type="text/plain" data-codigo data-archivo="terminal" data-tipo="comando">node --env-file=.env preguntar.mjs "a qué hora abre la biblioteca" --sin-modelo</script>
+  <p>Probá también con alguna que se te ocurra a vos, de cualquier tema.</p>
+  <div class="caja cuaderno"><span class="rot">Ficha 3 · la pregunta que no está</span>
+    <ol>
+      <li>¿Cuántos fragmentos devolvió la búsqueda? En la clase 5, ¿cuántos devolvía el buscador viejo cuando ninguna palabra coincidía?</li>
+      <li>Anotá la similitud del primer fragmento. Compará con la del primer fragmento en las preguntas de la Ficha 2: ¿la diferencia es grande o chica?</li>
+      <li>Corré la misma pregunta sin <code class="in">--sin-modelo</code>. ¿Qué contestó el modelo? ¿Quién evitó que inventara: la búsqueda o el prompt?</li>
+      <li>Si el modelo no tuviera la restricción del prompt, ¿qué crees que pasaría con estos tres fragmentos?</li>
+    </ol>
+  </div>
+</section>
+
+<footer class="cierre">
+  <p><strong>Antes de irte:</strong> no borres la carpeta. <code class="in">indice.json</code>, <code class="in">similitud.mjs</code> y <code class="in">preguntar.mjs</code> son la base de la clase 7, donde el sistema se hace más rápido y más barato, y de la clase 8, donde pasa a una base de datos con tu propio corpus. Si terminaste antes: modificá <code class="in">preguntar.mjs</code> para que imprima la similitud de todos los fragmentos ordenados, no solo los tres primeros, y mirá cómo se reparten los valores para una pregunta buena y para una que no está.</p>
+  <details class="teoria glosario"><summary>Glosario de la clase</summary><div class="dentro"><dl>
+    <dt>Clave de API</dt><dd>Contraseña que identifica a quien le pide algo a un proveedor, para autorizarlo y cobrarle.</dd>
+    <dt>Variable de entorno</dt><dd>Valor de configuración que el programa lee desde afuera del código, como la clave en el .env.</dd>
+    <dt>Embedding</dt><dd>Lista de números que representa el significado de un texto. Textos parecidos tienen listas parecidas.</dd>
+    <dt>Vector</dt><dd>Lista de números pensada como una flecha con dirección y largo.</dd>
+    <dt>Dimensión</dt><dd>Cantidad de números de un vector. La de nuestro modelo de embeddings es fija.</dd>
+    <dt>Producto punto</dt><dd>Multiplicar dos vectores posición por posición y sumar.</dd>
+    <dt>Norma</dt><dd>El largo de un vector: raíz de la suma de los cuadrados.</dd>
+    <dt>Similitud coseno</dt><dd>Medida de cuánto apuntan para el mismo lado dos vectores, entre -1 y 1, sin importar el largo de la flecha.</dd>
+    <dt>Búsqueda semántica</dt><dd>Buscar por significado en lugar de por palabras exactas.</dd>
+    <dt>Índice</dt><dd>Trabajo hecho de antemano para que la búsqueda sea rápida. Acá, el archivo con cada fragmento y su vector.</dd>
+    <dt>Top-k</dt><dd>Quedarse con los k resultados más parecidos.</dd>
+    <dt>RAG</dt><dd>Recuperar fragmentos de una fuente propia y pegarlos en la entrada del modelo antes de que responda.</dd>
+  </dl></div></details>
+  <p>Desarrollo con IA · UDI III · IES Santa Fe</p>
+</footer>
+</main>
+</div>
+
+<script>
+(function () {
+  // ---------- almacenamiento seguro ----------
+  const leer = (k, d) => { try { const v = localStorage.getItem(k); return v === null ? d : v; } catch (e) { return d; } };
+  const guardar = (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} };
+
+  // ---------- resaltado ----------
+  const KW = new Set(["import","from","export","function","const","let","for","of","if","return","await","async","throw","new","while","break","true","false"]);
+  function esc(s) { return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
+  function resaltar(src, tipo) {
+    if (tipo === "comando" || /\.(env|gitignore|txt)$/.test(tipo)) return esc(src);
+    const re = /(\/\/[^\n]*)|(`(?:\\.|[^`\\])*`|"(?:\\.|[^"\\\n])*"|'(?:\\.|[^'\\\n])*')|(\b[A-Za-z_]\w*\b)/g;
+    let out = "", last = 0, m;
+    while ((m = re.exec(src))) {
+      out += esc(src.slice(last, m.index));
+      if (m[1]) out += m[1].includes("TODO") ? `<span class="c t">${esc(m[1])}</span>` : `<span class="c">${esc(m[1])}</span>`;
+      else if (m[2]) out += `<span class="s">${esc(m[2])}</span>`;
+      else out += KW.has(m[3]) ? `<span class="k">${m[3]}</span>` : m[3];
+      last = re.lastIndex;
+    }
+    return out + esc(src.slice(last));
+  }
+
+  // ---------- bloques de código ----------
+  document.querySelectorAll("script[data-codigo]").forEach((el, i) => {
+    const src = el.textContent.replace(/^\n/, "").replace(/\s+$/, "");
+    const archivo = el.dataset.archivo, tipo = el.dataset.tipo || "";
+    const caja = document.createElement("div");
+    caja.className = "codigo";
+    const esTodo = tipo.includes("TODO") || tipo === "completar";
+    const lenguaje = tipo === "comando" ? "comando" : archivo;
+    caja.innerHTML =
+      `<div class="cab"><span><span class="archivo">${esc(archivo)}</span><span class="tipo${esTodo ? " todo" : ""}">${esc(tipo)}</span></span>` +
+      `<button type="button" class="copiar" id="copiar-${i}">Copiar</button></div>` +
+      `<pre><code>${resaltar(src, lenguaje)}</code></pre>`;
+    el.replaceWith(caja);
+    const btn = caja.querySelector(".copiar");
+    btn.addEventListener("click", () => {
+      const ok = () => { btn.textContent = "Copiado"; btn.classList.add("ok"); setTimeout(() => { btn.textContent = "Copiar"; btn.classList.remove("ok"); }, 1600); };
+      const seleccionar = () => { const r = document.createRange(); r.selectNodeContents(caja.querySelector("code")); const s = getSelection(); s.removeAllRanges(); s.addRange(r); btn.textContent = "Seleccionado: Ctrl+C"; };
+      try { navigator.clipboard.writeText(src).then(ok, seleccionar); } catch (e) { seleccionar(); }
+    });
+  });
+
+  // ---------- sistema operativo ----------
+  const bWin = document.getElementById("osWin"), bUnix = document.getElementById("osUnix");
+  function ponerOS(os) {
+    document.body.dataset.os = os;
+    bWin.setAttribute("aria-pressed", os === "win");
+    bUnix.setAttribute("aria-pressed", os === "unix");
+    guardar("rag6-os", os);
+  }
+  const osInicial = leer("rag6-os", /Mac|Linux/.test(navigator.platform || "") ? "unix" : "win");
+  ponerOS(osInicial);
+  bWin.addEventListener("click", () => ponerOS("win"));
+  bUnix.addEventListener("click", () => ponerOS("unix"));
+
+  // ---------- índice y progreso ----------
+  const pasos = [...document.querySelectorAll("section.paso")];
+  const lista = document.getElementById("listaIndice");
+  pasos.forEach((s, i) => {
+    const li = document.createElement("li");
+    li.innerHTML = `<a href="#${s.id}" id="ind-${s.id}"><span class="n"><span>${String(i).padStart(2, "0")}</span></span>${s.dataset.titulo}</a>`;
+    lista.appendChild(li);
+  });
+  function actualizar() {
+    let n = 0;
+    pasos.forEach(s => {
+      const c = s.querySelector('input[type="checkbox"]');
+      document.getElementById("ind-" + s.id).classList.toggle("hecho", c.checked);
+      if (c.checked) n++;
+    });
+    document.getElementById("barra").style.width = (100 * n / pasos.length) + "%";
+    document.getElementById("progresoTxt").textContent = `${n} de ${pasos.length} pasos`;
+  }
+  pasos.forEach(s => {
+    const c = s.querySelector('input[type="checkbox"]');
+    c.checked = leer("rag6-" + c.id, "0") === "1";
+    c.addEventListener("change", () => { guardar("rag6-" + c.id, c.checked ? "1" : "0"); actualizar(); });
+  });
+  actualizar();
+
+  // ---------- proveedor ----------
+  const botonesProv = [...document.querySelectorAll("button[data-prov]")];
+  function ponerProv(p) {
+    document.body.dataset.prov = p;
+    botonesProv.forEach(b => b.setAttribute("aria-pressed", b.dataset.prov === p));
+    guardar("rag6-prov", p);
+  }
+  ponerProv(leer("rag6-prov", "gemini"));
+  botonesProv.forEach(b => b.addEventListener("click", () => ponerProv(b.dataset.prov)));
+
+  // ---------- teoría: mostrar u ocultar todo ----------
+  const bTeoria = document.getElementById("botonTeoria");
+  const teorias = [...document.querySelectorAll("details.teoria")];
+  function sincronizarBoton() {
+    const todas = teorias.every(d => d.open);
+    bTeoria.setAttribute("aria-pressed", todas);
+    bTeoria.textContent = todas ? "Ocultar toda la teoría" : "Mostrar toda la teoría";
+  }
+  bTeoria.addEventListener("click", () => {
+    const abrir = !teorias.every(d => d.open);
+    teorias.forEach(d => { d.open = abrir; });
+    sincronizarBoton();
+  });
+  teorias.forEach(d => d.addEventListener("toggle", sincronizarBoton));
+
+  // ---------- simulador coseno ----------
+  const angA = document.getElementById("angA"), angB = document.getElementById("angB"), largoB = document.getElementById("largoB");
+  function punto(ang, r) { const t = ang * Math.PI / 180; return [r * Math.cos(t), -r * Math.sin(t)]; }
+  function dibujar() {
+    const a = +angA.value, b = +angB.value, lb = +largoB.value;
+    const [ax, ay] = punto(a, 90), [bx, by] = punto(b, 90 * lb / 100);
+    for (const [id, x, y] of [["vecA", ax, ay], ["vecB", bx, by]]) { const l = document.getElementById(id); l.setAttribute("x2", x); l.setAttribute("y2", y); }
+    document.getElementById("puntaA").setAttribute("cx", ax); document.getElementById("puntaA").setAttribute("cy", ay);
+    document.getElementById("puntaB").setAttribute("cx", bx); document.getElementById("puntaB").setAttribute("cy", by);
+    let d = ((b - a) % 360 + 360) % 360; const barre = d > 180 ? 0 : 1;
+    const [p1x, p1y] = punto(a, 30), [p2x, p2y] = punto(b, 30);
+    document.getElementById("arco").setAttribute("d", `M ${p1x} ${p1y} A 30 30 0 0 ${barre === 1 ? 0 : 1} ${p2x} ${p2y}`);
+    const va = [Math.cos(a * Math.PI / 180), Math.sin(a * Math.PI / 180)];
+    const vb = [lb * Math.cos(b * Math.PI / 180), lb * Math.sin(b * Math.PI / 180)];
+    const cos = (va[0] * vb[0] + va[1] * vb[1]) / (Math.hypot(...va) * Math.hypot(...vb));
+    document.getElementById("valorCos").textContent = cos.toFixed(3).replace(".", ",").replace("-0,000", "0,000");
+    let ang = Math.abs(((b - a + 540) % 360) - 180);
+    document.getElementById("lecturaCos").textContent = `Ángulo entre A y B: ${Math.round(ang)}°`;
+  }
+  [angA, angB, largoB].forEach(i => i.addEventListener("input", dibujar));
+  dibujar();
+})();
+</script>
+</body></html>
