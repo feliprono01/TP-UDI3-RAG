@@ -1,0 +1,18 @@
+[
+  { "pregunta": "¿cuánto sale la cuota mensual de un socio activo?",           "esta": true,  "seccion": "Cuota social" },
+  { "pregunta": "¿cuántas cuotas impagas hacen que me den de baja?",           "esta": true,  "seccion": "Morosidad y baja" },
+  { "pregunta": "¿a cuántos invitados puedo llevar por día?",                  "esta": true,  "seccion": "Invitados" },
+  { "pregunta": "¿hasta qué hora está abierto el club los sábados?",           "esta": true,  "seccion": "Horarios del club" },
+  { "pregunta": "¿puedo llevar al perro a la pileta?",                         "esta": true,  "seccion": "Mascotas" },
+  { "pregunta": "¿cuándo empieza la temporada de pileta?",                     "esta": true,  "seccion": "Temporada de pileta" },
+  { "pregunta": "¿con cuánta anticipación tengo que reservar el quincho?",     "esta": true,  "seccion": "Quincho" },
+  { "pregunta": "¿cuánto cuesta reservar una cancha de pádel?",                "esta": true,  "seccion": "Canchas de pádel" },
+  { "pregunta": "¿puedo ir al gimnasio si tengo 14 años?",                     "esta": true,  "seccion": "Gimnasio" },
+  { "pregunta": "¿quién puede votar en la asamblea?",                          "esta": true,  "seccion": "Asambleas y votación" },
+
+  { "pregunta": "¿cuál es la contraseña del wifi del club?",                   "esta": false },
+  { "pregunta": "¿quién ganó el último mundial?",                              "esta": false },
+  { "pregunta": "¿cómo se hace una milanesa?",                                 "esta": false },
+  { "pregunta": "¿cuánto cuesta alquilar la cancha de tenis?",                 "esta": false },
+  { "pregunta": "¿el club tiene buffet o cantina?",                            "esta": false }
+]
