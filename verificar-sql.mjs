@@ -5,7 +5,7 @@ import { consulta, cerrar } from "./db.mjs";
 import { coseno } from "./similitud.mjs";
 
 try {
-  const vector = await embedding("¿cuánto sale la cuota mensual?");
+  const vector = await embedding("¿cuántos años de garantía tiene un 0km?");
   const top = await buscar(vector, 3);
 
   console.log("sección                           SQL        JavaScript");

@@ -1,6 +1,6 @@
-# Los Ceibos — RAG propio (Desarrollo con IA, exposición final)
+# Austral Motors — RAG propio (Desarrollo con IA, exposición final)
 
-Un asistente que responde sobre el reglamento y la guía de instalaciones de un club (Don Aníbal, el conserje).
+Un asistente (Rodolfo, asesor de ventas) que responde sobre financiación, garantía y service, políticas de venta y catálogo de modelos de una concesionaria de autos.
 `pregunta → embedding (Ollama) → búsqueda SQL (Postgres + pgvector) → umbral → prompt → respuesta (Gemini)`
 
 ## Puesta en marcha (una sola vez)
@@ -20,8 +20,8 @@ Un asistente que responde sobre el reglamento y la guía de instalaciones de un 
 |---|---|---|
 | Ficha 1 | `node --env-file=.env prueba.mjs` | Debe decir 1024 números (coincide con `DIMENSIONES` y con `esquema.sql`). |
 | Tabla | `node --env-file=.env crear-tabla.mjs` | "Listo: extensión vector activa…" |
-| Ficha 2 | `node probar-trocear.mjs` | 19 fragmentos, todos con sección. |
-| Indexar | `node --env-file=.env indexar.mjs` | 11 + 8 fragmentos. Correrlo dos veces da lo mismo (el TRUNCATE). |
+| Ficha 2 | `node probar-trocear.mjs` | 26 fragmentos, todos con sección. |
+| Indexar | `node --env-file=.env indexar.mjs` | 7 + 7 + 12 fragmentos. Correrlo dos veces da lo mismo (el TRUNCATE). |
 | Verificar | `node --env-file=.env verificar-sql.mjs` | SQL y JavaScript coinciden en los decimales. |
 | Ficha 4 | `node --env-file=.env distribucion.mjs` | Elegir el UMBRAL y ponerlo en `.env`. |
 | Ficha 5 | `node --env-file=.env preguntar.mjs "¿…?"` | Con `--sin-modelo` se ve solo la búsqueda. |

@@ -1,18 +1,18 @@
 [
-  { "pregunta": "¿cuánto sale la cuota mensual de un socio activo?",           "esta": true,  "seccion": "Cuota social" },
-  { "pregunta": "¿cuántas cuotas impagas hacen que me den de baja?",           "esta": true,  "seccion": "Morosidad y baja" },
-  { "pregunta": "¿a cuántos invitados puedo llevar por día?",                  "esta": true,  "seccion": "Invitados" },
-  { "pregunta": "¿hasta qué hora está abierto el club los sábados?",           "esta": true,  "seccion": "Horarios del club" },
-  { "pregunta": "¿puedo llevar al perro a la pileta?",                         "esta": true,  "seccion": "Mascotas" },
-  { "pregunta": "¿cuándo empieza la temporada de pileta?",                     "esta": true,  "seccion": "Temporada de pileta" },
-  { "pregunta": "¿con cuánta anticipación tengo que reservar el quincho?",     "esta": true,  "seccion": "Quincho" },
-  { "pregunta": "¿cuánto cuesta reservar una cancha de pádel?",                "esta": true,  "seccion": "Canchas de pádel" },
-  { "pregunta": "¿puedo ir al gimnasio si tengo 14 años?",                     "esta": true,  "seccion": "Gimnasio" },
-  { "pregunta": "¿quién puede votar en la asamblea?",                          "esta": true,  "seccion": "Asambleas y votación" },
+  { "pregunta": "¿cuánto necesito de anticipo para financiar un auto?",          "esta": true,  "seccion": "Planes de financiación propia" },
+  { "pregunta": "¿puedo entregar mi auto usado como parte de pago?",             "esta": true,  "seccion": "Entrega de tu usado como parte de pago" },
+  { "pregunta": "¿qué documentación tengo que llevar para comprar un auto?",     "esta": true,  "seccion": "Documentación requerida" },
+  { "pregunta": "¿cuántos años de garantía tiene un 0km?",                       "esta": true,  "seccion": "Garantía de fábrica (0km)" },
+  { "pregunta": "¿me dan auto de cortesía mientras hacen el service?",           "esta": true,  "seccion": "Turnos de service" },
+  { "pregunta": "¿cada cuánto hay que hacer el service?",                        "esta": true,  "seccion": "Service y mantenimiento programado" },
+  { "pregunta": "¿cuánto tengo que pagar de seña para reservar un auto?",        "esta": true,  "seccion": "Reserva y seña" },
+  { "pregunta": "¿cuánto tarda la entrega de un 0km que está en stock?",         "esta": true,  "seccion": "Entrega del vehículo" },
+  { "pregunta": "¿qué consumo de combustible tiene la pick-up Cordillera?",      "esta": true,  "seccion": "Pick-up Cordillera 4x4 Diésel" },
+  { "pregunta": "¿cuántos caballos de fuerza tiene la Travesía?",                "esta": true,  "seccion": "SUV Travesía 2.0" },
 
-  { "pregunta": "¿cuál es la contraseña del wifi del club?",                   "esta": false },
-  { "pregunta": "¿quién ganó el último mundial?",                              "esta": false },
-  { "pregunta": "¿cómo se hace una milanesa?",                                 "esta": false },
-  { "pregunta": "¿cuánto cuesta alquilar la cancha de tenis?",                 "esta": false },
-  { "pregunta": "¿el club tiene buffet o cantina?",                            "esta": false }
+  { "pregunta": "¿quién ganó el último mundial?",                                "esta": false },
+  { "pregunta": "¿cómo se hace una milanesa?",                                   "esta": false },
+  { "pregunta": "¿tienen autos eléctricos en el catálogo?",                      "esta": false },
+  { "pregunta": "¿cuánto cuesta el service de la Vela 1.6?",                     "esta": false },
+  { "pregunta": "¿hacen envíos a domicilio del auto comprado?",                  "esta": false }
 ]

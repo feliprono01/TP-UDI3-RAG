@@ -47,7 +47,7 @@ docker run -d --name rag-db -e POSTGRES_PASSWORD=rag -p 5433:5432 -v rag-datos:/
 node --env-file=.env crear-tabla.mjs
 node --env-file=.env indexar.mjs
 ```
-Tiene que decir: `guia-instalaciones.md: 8 fragmentos` y `reglamento-socios.md: 11 fragmentos`.
+Tiene que decir: `financiacion.md: 7 fragmentos`, `garantia-service.md: 7 fragmentos` y `politicas-y-catalogo.md: 12 fragmentos`.
 Comprobación opcional: `node --env-file=.env verificar-sql.mjs` (las dos columnas deben coincidir).
 
 ## A.5 La clave de Google
@@ -101,7 +101,7 @@ El núcleo del RAG (`api.mjs`, `buscar.mjs`, `rag.mjs`, `db.mjs`, `trocear.mjs`)
 
 ## B.2 Paso a paso
 
-**1. Reemplazar el corpus.** Vaciá la carpeta `corpus/` y copiá tus archivos nuevos. Si dejás los del club, se mezclan con el tema nuevo.
+**1. Reemplazar el corpus.** Vaciá la carpeta `corpus/` y copiá tus archivos nuevos. Si dejás los de la concesionaria, se mezclan con el tema nuevo.
 
 **2. Escribir la marca (`marca.mjs`).** Es una expresión regular que reconoce el primer renglón de cada parte. Tiene que empezar con `^`.
 
@@ -135,14 +135,14 @@ node --env-file=.env distribucion.mjs
 **6. Elegir el umbral.**
 - Si hay un hueco entre las que están y las que no, poné un número en el medio.
 - Si se pisan (lo normal), elegí qué error preferís: dejar pasar una que no está, o perder una que sí. Para consultas de información, conviene dejar pasar de más (el prompt todavía puede frenar). Anotá cuáles quedaron del lado equivocado: son tu material para la exposición.
-- Ponelo en `.env` como `UMBRAL=0.58` (con punto decimal).
+- Ponelo en `.env` como `UMBRAL=0.50` (con punto decimal).
 
 **7. Cambiar la cara (`public/index.html`).** Buscá y cambiá:
-- Los textos: nombre del club, "Don Aníbal", el saludo, la sección "Cómo responde…".
+- Los textos: nombre del negocio, el personaje ("Rodolfo"), el saludo, la sección "Cómo responde…".
 - Las preguntas sugeridas: constante `SUGERENCIAS` al principio del script.
 - Los colores: variables `--verde`, `--ceibo`, `--crema`, `--papel`, `--amarillo` en `:root`.
 - El escudo (el `<svg>` de la cabecera) y el avatar (la constante `AVATAR`).
-- La clave de la memoria del historial: `CLAVE = "ceibos-historial"` (cambiala para que no mezcle charlas viejas).
+- La clave de la memoria del historial: `CLAVE = "austral-motors-historial"` (cambiala para que no mezcle charlas viejas).
 - Tiene que seguir mostrando la **fuente** y los fragmentos con su similitud: es requisito de la consigna.
 
 **8. Probar.**
@@ -157,7 +157,7 @@ node --env-file=.env preguntar.mjs --sin-modelo "una dudosa"
 
 ## B.3 Lo que hay que rehacer al cambiar de tema
 - **Las fichas 2, 4 y 5** de la clase 8: el troceado, las similitudes, el umbral y las cuatro preguntas son otros.
-- **La guía de la exposición**: los ejemplos (cuota, mundial, tenis) y los números cambian.
+- **La guía de la exposición**: los ejemplos (anticipo, mundial, service de la Vela) y los números cambian.
 - **Siempre se vuelve a medir el umbral.** Un número calibrado para otro corpus o modelo no sirve.
 
 ## B.4 Qué NO cambiar sin pensarlo
