@@ -1,6 +1,6 @@
 # Guía de preguntas y respuestas para la evaluación
 
-Preguntas que probablemente te hagan en la exposición, agrupadas por tema, con la respuesta armada a partir de tu propio sistema (Austral Motors) y de los apuntes de las clases 5 a 8. Cuando un concepto puede sonar raro, va explicado aparte en un bloque **CONCEPTO**.
+Preguntas que probablemente te hagan en la exposición, agrupadas por tema, con la respuesta armada a partir de tu propio sistema (PROSEBA automotores) y de los apuntes de las clases 5 a 8. Cuando un concepto puede sonar raro, va explicado aparte en un bloque **CONCEPTO**.
 
 Estudiala con tus palabras, no la leas en voz alta. Donde dice "mi sistema" podés señalar el código o la pantalla.
 
@@ -130,7 +130,7 @@ Ordeno por la **distancia** (`embedding <=> $1`), no por la similitud, aunque da
 
 ### P: ¿Cómo calibraste tu umbral? ¿Por qué no un número fijo tipo 0,5 "porque sí"?
 
-**R:** Con `distribucion.mjs` y `pruebas.json`: armé 10 preguntas cuya respuesta sí está en el corpus y 5 cuya respuesta no está (2 totalmente ajenas, como el mundial, y 3 relacionadas pero ausentes, como el precio del service de un modelo puntual). Para cada una medí la similitud del mejor fragmento. Las que están dieron entre 0,505 y 0,786; las que no, entre 0,258 y 0,693. Elegí **0,50**, justo debajo de la más baja de las que están, para no perder ninguna respuesta válida.
+**R:** Con `distribucion.mjs` y `pruebas.json`: armé 10 preguntas cuya respuesta sí está en el corpus y 5 cuya respuesta no está (2 totalmente ajenas, como el mundial, y 3 relacionadas pero ausentes, como el precio del service de un modelo puntual). Para cada una medí la similitud del mejor fragmento. Las que están dieron entre 0,505 y 0,786; las que no, entre 0,247 y 0,693. Elegí **0,50**, justo debajo de la más baja de las que están, para no perder ninguna respuesta válida.
 
 ### P: Las nubes de similitud se pisan (0,505 vs. 0,693). ¿Eso no es un problema?
 
@@ -150,7 +150,7 @@ Ordeno por la **distancia** (`embedding <=> $1`), no por la similitud, aunque da
 
 ### P: ¿Cómo está armado tu prompt? ¿Por qué tiene esa estructura?
 
-**R:** `rag.mjs` arma el prompt final combinando una plantilla (`prompt.txt`) con los fragmentos encontrados y la pregunta. La plantilla tiene cinco ejes: **rol** (quién responde: Rodolfo, asesor de Austral Motors), **contexto** (los fragmentos recuperados y nada más), **tarea** (responder la pregunta con eso), **restricciones** (no usar conocimiento propio, y si no alcanza, decir exactamente "No lo encuentro en los documentos.") y **formato** (respuesta breve + renglón `Fuente:` con archivo y sección).
+**R:** `rag.mjs` arma el prompt final combinando una plantilla (`prompt.txt`) con los fragmentos encontrados y la pregunta. La plantilla tiene cinco ejes: **rol** (quién responde: Pancho, asesor de PROSEBA automotores), **contexto** (los fragmentos recuperados y nada más), **tarea** (responder la pregunta con eso), **restricciones** (no usar conocimiento propio, y si no alcanza, decir exactamente "No lo encuentro en los documentos.") y **formato** (respuesta breve + renglón `Fuente:` con archivo y sección).
 
 ### P: ¿Por qué le exigís una frase exacta para "no sé", en vez de dejar que conteste como quiera?
 
@@ -186,7 +186,7 @@ Ordeno por la **distancia** (`embedding <=> $1`), no por la similitud, aunque da
 1. **Reranking:** un modelo más preciso que reordene los fragmentos recuperados mirando la pregunta y cada fragmento juntos. Habría distinguido mejor "precio del auto" de "precio del service" en mi pregunta que falla.
 2. **Búsqueda híbrida:** combinar la búsqueda por significado (embeddings) con una búsqueda por palabras exactas (BM25), útil para nombres de modelos y datos puntuales como precios.
 3. **Actualización incremental:** reindexar solo los documentos que cambiaron, no todo el corpus cada vez.
-4. **Medición formal:** un conjunto grande de preguntas con su respuesta correcta conocida, para medir en porcentaje cuántas veces el fragmento correcto aparece entre los primeros resultados (yo medí a mano con 15 preguntas).
+4. **Medición formal:** un conjunto grande de preguntas con su respuesta correcta conocida, para medir en porcentaje cuántas veces el fragmento correcto aparece entre los primeros resultados (yo medí a mano con 16 preguntas).
 
 ---
 

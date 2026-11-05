@@ -1,16 +1,16 @@
-# Financiación — Austral Motors
+# Financiación — PROSEBA automotores
 
-Austral Motors ofrece distintas formas de pago para vehículos 0km y usados. Esta guía resume los planes vigentes, los requisitos y las condiciones de entrega del usado como parte de pago. Los montos están expresados en pesos argentinos y se actualizan mensualmente.
+PROSEBA automotores ofrece distintas formas de pago para vehículos 0km y usados. Esta guía resume los planes vigentes, los requisitos y las condiciones de entrega del usado como parte de pago. Los montos están expresados en pesos argentinos y se actualizan mensualmente.
 
 ## Planes de financiación propia
 
-Austral Motors financia directamente hasta el 70% del valor del vehículo, en cuotas fijas de 12, 24 o 36 meses. La tasa nominal anual es del 42% para 0km y del 48% para usados con menos de 5 años de antigüedad. No se financian usados de más de 8 años.
+PROSEBA automotores financia directamente hasta el 70% del valor del vehículo, en cuotas fijas de 12, 24 o 36 meses. La tasa nominal anual es del 42% para 0km y del 48% para usados con menos de 5 años de antigüedad. No se financian usados de más de 8 años.
 
 Para acceder al plan propio hace falta un anticipo mínimo del 30% y recibo de sueldo o monotributo de los últimos 3 meses. La aprobación se informa dentro de las 48 horas hábiles de presentada la documentación.
 
 ## Financiación bancaria
 
-Austral Motors trabaja con los bancos Nación, Provincia y Galicia para préstamos prendarios. El cliente gestiona el crédito directamente con el banco elegido; el concesionario solo provee la factura proforma y la documentación del vehículo. El plazo máximo de los créditos prendarios es de 60 meses, y la tasa depende de la política de cada banco, no de Austral Motors.
+PROSEBA automotores trabaja con los bancos Nación, Provincia y Galicia para préstamos prendarios. El cliente gestiona el crédito directamente con el banco elegido; el concesionario solo provee la factura proforma y la documentación del vehículo. El plazo máximo de los créditos prendarios es de 60 meses, y la tasa depende de la política de cada banco, no de PROSEBA automotores.
 
 ## Entrega de tu usado como parte de pago
 
@@ -32,4 +32,4 @@ El anticipo se puede pagar en efectivo, transferencia o con el valor de un usado
 
 ## Cancelación anticipada
 
-El plan propio de Austral Motors permite la cancelación anticipada total o parcial sin penalidad, en cualquier momento, con un descuento proporcional de los intereses no devengados. Para créditos bancarios, la cancelación anticipada se rige por las condiciones del banco otorgante.
+El plan propio de PROSEBA automotores permite la cancelación anticipada total o parcial sin penalidad, en cualquier momento, con un descuento proporcional de los intereses no devengados. Para créditos bancarios, la cancelación anticipada se rige por las condiciones del banco otorgante.

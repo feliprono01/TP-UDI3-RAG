@@ -138,11 +138,11 @@ node --env-file=.env distribucion.mjs
 - Ponelo en `.env` como `UMBRAL=0.50` (con punto decimal).
 
 **7. Cambiar la cara (`public/index.html`).** Buscá y cambiá:
-- Los textos: nombre del negocio, el personaje ("Rodolfo"), el saludo, la sección "Cómo responde…".
+- Los textos: nombre del negocio, el personaje ("Pancho"), el saludo, la sección "Cómo responde…".
 - Las preguntas sugeridas: constante `SUGERENCIAS` al principio del script.
 - Los colores: variables `--verde`, `--ceibo`, `--crema`, `--papel`, `--amarillo` en `:root`.
 - El escudo (el `<svg>` de la cabecera) y el avatar (la constante `AVATAR`).
-- La clave de la memoria del historial: `CLAVE = "austral-motors-historial"` (cambiala para que no mezcle charlas viejas).
+- La clave de la memoria del historial: `CLAVE = "proseba-automotores-historial"` (cambiala para que no mezcle charlas viejas).
 - Tiene que seguir mostrando la **fuente** y los fragmentos con su similitud: es requisito de la consigna.
 
 **8. Probar.**

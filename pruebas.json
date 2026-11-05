@@ -9,6 +9,7 @@
   { "pregunta": "¿cuánto tarda la entrega de un 0km que está en stock?",         "esta": true,  "seccion": "Entrega del vehículo" },
   { "pregunta": "¿qué consumo de combustible tiene la pick-up Cordillera?",      "esta": true,  "seccion": "Pick-up Cordillera 4x4 Diésel" },
   { "pregunta": "¿cuántos caballos de fuerza tiene la Travesía?",                "esta": true,  "seccion": "SUV Travesía 2.0" },
+  { "pregunta": "Compré un usado certificado y lo quiero entregar como parte de pago de un 0km: ¿qué garantía tiene el usado certificado y hasta qué antigüedad me lo reciben?", "esta": true, "seccion": "Garantía de autos usados" },
 
   { "pregunta": "¿quién ganó el último mundial?",                                "esta": false },
   { "pregunta": "¿cómo se hace una milanesa?",                                   "esta": false },

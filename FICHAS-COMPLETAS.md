@@ -1,6 +1,6 @@
 # Fichas de la clase 8 — completadas con los datos reales de mi sistema
 
-Corpus: Financiación + Garantía y Service + Políticas de Venta y Catálogo de Austral Motors (concesionaria de autos).
+Corpus: Financiación + Garantía y Service + Políticas de Venta y Catálogo de PROSEBA automotores (concesionaria de autos).
 Los números son los que salieron de correr mi propio sistema. Pasalas a mano a las fichas y reescribí las explicaciones con tus palabras.
 
 ---
@@ -58,23 +58,24 @@ No. El umbral depende del corpus y de cómo el embedding ubica sus textos: un n�
 | ¿cuánto tarda la entrega de un 0km que está en stock? | sí | 0,786 |
 | ¿cuánto tengo que pagar de seña para reservar un auto? | sí | 0,765 |
 | ¿cuántos años de garantía tiene un 0km? | sí | 0,762 |
+| Compré un usado certificado y lo quiero entregar como parte de pago de un 0km: ¿qué garantía tiene y hasta qué antigüedad me lo reciben? (cruza dos documentos) | sí | 0,754 |
 | ¿puedo entregar mi auto usado como parte de pago? | sí | 0,749 |
 | ¿qué consumo de combustible tiene la pick-up Cordillera? | sí | 0,724 |
+| ¿cuánto necesito de anticipo para financiar un auto? | sí | 0,646 |
 | ¿qué documentación tengo que llevar para comprar un auto? | sí | 0,643 |
-| ¿cuánto necesito de anticipo para financiar un auto? | sí | 0,643 |
-| ¿cada cuánto hay que hacer el service? | sí | 0,607 |
-| ¿me dan auto de cortesía mientras hacen el service? | sí | 0,592 |
+| ¿cada cuánto hay que hacer el service? | sí | 0,614 |
+| ¿me dan auto de cortesía mientras hacen el service? | sí | 0,575 |
 | ¿cuántos caballos de fuerza tiene la Travesía? | sí | 0,505 |
 | ¿cuánto cuesta el service de la Vela 1.6? | no | 0,693 |
 | ¿hacen envíos a domicilio del auto comprado? | no | 0,586 |
-| ¿tienen autos eléctricos en el catálogo? | no | 0,499 |
-| ¿cómo se hace una milanesa? | no | 0,359 |
-| ¿quién ganó el último mundial? | no | 0,258 |
+| ¿tienen autos eléctricos en el catálogo? | no | 0,489 |
+| ¿cómo se hace una milanesa? | no | 0,374 |
+| ¿quién ganó el último mundial? | no | 0,247 |
 
 **La recta** (X = está, O = no está, ^ = mi umbral 0,50):
 
 ```
-                                  X X   XX  X X  X  X        
+                                  X X   XX  X XX X  X        
                 O     O   O      O                           
   --------------------------------------------------------- 
                             ^                                 
@@ -93,13 +94,13 @@ Dibujala a mano en la ficha: cruces para las que están, círculos para las que 
 
 | # | Pregunta | Similitud del primero | Fuente que citó | ¿Correcta? | Si falló: ¿búsqueda o modelo? |
 |---|---|---|---|---|---|
-| 1 | ¿cuánto necesito de anticipo para financiar un auto? | 0,643 | financiacion.md — Planes de financiación propia | Sí (30% mínimo) | — |
+| 1 | ¿cuánto necesito de anticipo para financiar un auto? | 0,646 | financiacion.md — Planes de financiación propia | Sí (30% mínimo) | — |
 | 2 | ¿cuántos años de garantía tiene un 0km? | 0,762 | garantia-service.md — Garantía de fábrica (0km) | Sí (3 años o 100.000 km) | — |
-| 3 | ¿quién ganó el último mundial? | 0,258 | ninguna (no se llamó al modelo) | Sí: "No lo encuentro en los documentos." | — (el umbral la cortó) |
-| 4 | ¿cuánto cuesta el service de la Vela 1.6? | 0,693 | trajo "Sedán Vela 1.6", "Reserva y seña" y "Service y mantenimiento" | Contestó bien ("No lo encuentro"), pero por el motivo equivocado | Falló la **búsqueda** (el precio del service no está en ninguno de los tres fragmentos: el documento solo dice que depende del modelo); lo salvó el **modelo** |
+| 3 | ¿quién ganó el último mundial? | 0,247 | ninguna (no se llamó al modelo) | Sí: "No lo encuentro en los documentos." | — (el umbral la cortó) |
+| 4 | ¿cuánto cuesta el service de la Vela 1.6? | 0,693 | trajo "Sedán Vela 1.6", "Reserva y seña" y "Service y mantenimiento" | Contestó bien sin inventar precio ("No lo encuentro" o solo lo que dice el documento: el primer service es gratis y el costo depende del modelo; varía entre corridas), pero por el motivo equivocado | Falló la **búsqueda** (el precio del service no está en ninguno de los tres fragmentos: el documento solo dice que depende del modelo); lo salvó el **modelo** |
 
 **Para la exposición:**
 - **Pregunta que funciona:** la del anticipo para financiar. Abrir `financiacion.md` en "Planes de financiación propia" y mostrar que dice 30% mínimo.
-- **Pregunta que no está y el sistema dice que no:** la del mundial (0,258, muy debajo del umbral, sin llamar al modelo).
+- **Pregunta que no está y el sistema dice que no:** la del mundial (0,247, muy debajo del umbral, sin llamar al modelo).
 - **Pregunta que falla:** la del service de la Vela 1.6. La búsqueda trajo fragmentos relacionados (el modelo, la reserva, el plan de mantenimiento) pero ninguno tiene el precio puntual, porque el documento aclara que el costo del service "depende del modelo y se informa al momento del turno". El umbral los dejó pasar (0,693, 0,522 y 0,515, todos sobre 0,50), y el prompt, que obliga al modelo a usar solo los fragmentos, impidió que inventara un precio. Para arreglarlo de verdad haría falta reranking o búsqueda híbrida.
 - **Bonus — pregunta compuesta que también falla por búsqueda:** "si entrego mi usado como parte de pago y el 0km tiene garantía, ¿en qué casos se anula la garantía por no hacer el service?" mezcla dos temas en una sola oración; la búsqueda trae fragmentos de "Devoluciones y cambios", el título general de garantía y "Entrega de tu usado…", mientras que la respuesta real está en "Service y mantenimiento programado". El sistema dice correctamente que no lo encuentra, pero la causa es, otra vez, una falla de búsqueda y no que la respuesta no exista en el corpus.

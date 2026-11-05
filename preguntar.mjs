@@ -26,7 +26,7 @@ try {
     await preguntar(pregunta);
   } else {
     const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
-    console.log("Rodolfo te escucha. Escribí tu pregunta (vacío para salir).");
+    console.log("Pancho te escucha. Escribí tu pregunta (vacío para salir).");
     for (;;) {
       const texto = (await rl.question("\n> ")).trim();
       if (!texto) break;

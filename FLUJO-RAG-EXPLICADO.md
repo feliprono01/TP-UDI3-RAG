@@ -1,4 +1,4 @@
-# Flujo completo del RAG — Austral Motors
+# Flujo completo del RAG — PROSEBA automotores
 
 > Este documento explica cómo funciona el sistema de principio a fin, con definiciones de cada concepto técnico que aparece en el camino.
 
@@ -56,7 +56,7 @@ Los archivos `.md` dentro de la carpeta `corpus/` son la **fuente de conocimient
 - `garantia-service.md`
 - `politicas-y-catalogo.md`
 
-Son documentos de texto que contienen toda la información que Rodolfo (el asistente) puede usar para responder.
+Son documentos de texto que contienen toda la información que Pancho (el asistente) puede usar para responder.
 
 ---
 
@@ -161,10 +161,10 @@ Esto evita que el modelo invente respuestas cuando no hay información relevante
 
 Con los fragmentos útiles, se arma el **prompt**: el mensaje completo que se le manda al modelo de IA.
 
-La plantilla (`prompt.txt`) define el personaje (Rodolfo) y las instrucciones:
+La plantilla (`prompt.txt`) define el personaje (Pancho) y las instrucciones:
 
 ```
-Sos Rodolfo, asesor de ventas de Austral Motors...
+Sos Pancho, asesor de ventas de PROSEBA automotores...
 Respondé usando EXCLUSIVAMENTE los fragmentos que aparecen más abajo.
 Si los fragmentos no contienen la respuesta, respondé exactamente: "No lo encuentro en los documentos."
 
@@ -183,7 +183,7 @@ PREGUNTA:
 El prompt completo se manda a **Gemini** (modelo de Google) vía API. Gemini genera la respuesta final, respetando las instrucciones del prompt: personaje, tono, límite de dos oraciones, y citar la fuente.
 
 ```
-Rodolfo responde:
+Pancho responde:
 "Sí, contamos con el crédito UVA que se ajusta por inflación y tiene cuotas iniciales bajas.
 Fuente: financiacion.md — Crédito UVA"
 ```
@@ -203,7 +203,7 @@ Fuente: financiacion.md — Crédito UVA"
 | `indexar.mjs` | Lee el corpus, trocéa, calcula embeddings y guarda todo en la base |
 | `buscar.mjs` | Hace la búsqueda vectorial en SQL |
 | `rag.mjs` | Orquesta todo: embedding → búsqueda → umbral → prompt → respuesta |
-| `prompt.txt` | Plantilla del prompt con el personaje Rodolfo |
+| `prompt.txt` | Plantilla del prompt con el personaje Pancho |
 | `servidor.mjs` | Servidor web que sirve el chat en http://localhost:3000 |
 | `preguntar.mjs` | Versión de consola para hacer preguntas sin el front |
 | `distribucion.mjs` | Ayuda a elegir el umbral correcto |

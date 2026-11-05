@@ -1,6 +1,6 @@
-# Austral Motors — RAG propio (Desarrollo con IA, exposición final)
+# PROSEBA automotores — RAG propio (Desarrollo con IA, exposición final)
 
-Un asistente (Rodolfo, asesor de ventas) que responde sobre financiación, garantía y service, políticas de venta y catálogo de modelos de una concesionaria de autos.
+Un asistente (Pancho, asesor de ventas) que responde sobre financiación, garantía y service, políticas de venta y catálogo de modelos de una concesionaria de autos.
 `pregunta → embedding (Ollama) → búsqueda SQL (Postgres + pgvector) → umbral → prompt → respuesta (Gemini)`
 
 ## Puesta en marcha (una sola vez)

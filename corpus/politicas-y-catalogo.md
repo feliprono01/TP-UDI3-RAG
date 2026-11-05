@@ -1,12 +1,12 @@
-# Políticas de Venta — Austral Motors
+# Políticas de Venta — PROSEBA automotores
 
-Reglas generales para la compra de un vehículo en Austral Motors: reserva, test drive, entrega y devoluciones.
+Reglas generales para la compra de un vehículo en PROSEBA automotores: reserva, test drive, entrega y devoluciones.
 
 ## Reserva y seña
 
 Para reservar un vehículo se paga una seña de $300.000 para 0km y de $150.000 para usados, acreditable al precio final. La seña se puede pagar en efectivo, transferencia o tarjeta de débito; no se acepta tarjeta de crédito para señas.
 
-La reserva tiene validez de 10 días hábiles. Si el cliente desiste dentro de ese plazo, se devuelve el 50% de la seña. Pasados los 10 días sin concretar la compra, la seña no es reembolsable, salvo que la demora sea responsabilidad de Austral Motors (por ejemplo, demora en la entrega del 0km más allá de la fecha informada).
+La reserva tiene validez de 10 días hábiles. Si el cliente desiste dentro de ese plazo, se devuelve el 50% de la seña. Pasados los 10 días sin concretar la compra, la seña no es reembolsable, salvo que la demora sea responsabilidad de PROSEBA automotores (por ejemplo, demora en la entrega del 0km más allá de la fecha informada).
 
 ## Test drive
 
@@ -26,7 +26,7 @@ No hay devolución de 0km una vez patentado el vehículo, salvo defecto de fábr
 
 El salón de ventas atiende de lunes a viernes de 9 a 19 horas y los sábados de 9 a 13 horas. Los domingos y feriados permanece cerrado. El sector de postventa tiene sus propios horarios, detallados en la guía de garantía y service.
 
-# Catálogo de Modelos — Austral Motors
+# Catálogo de Modelos — PROSEBA automotores
 
 Modelos disponibles en el salón, con sus características principales. Los precios son orientativos y pueden variar según equipamiento y tipo de cambio del día.
 
