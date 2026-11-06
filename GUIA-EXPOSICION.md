@@ -5,9 +5,9 @@ Para estudiar, no para leer en voz alta: la idea es que lo digas con tus palabra
 ## 1. Guion de la demo (en este orden)
 
 1. **Mi corpus.** Financiación, garantía y service, políticas de venta y catálogo de modelos de PROSEBA automotores, una concesionaria de autos. Lo usaría un cliente que quiere saber cuánto necesita de anticipo, qué cubre la garantía o qué auto le conviene, sin buscar en varios documentos. Elegí tres documentos (en vez de uno o dos) para poder hacer preguntas que a veces mezclan temas y ver cómo responde la búsqueda en ese caso.
-2. **El front.** El asesor virtual "Pancho" de PROSEBA automotores: tiene la identidad de la concesionaria (paleta slate oscuro + rojo, tipografía legible para chat), muestra los fragmentos que sacó de los documentos con su similitud y una raya roja que marca el umbral, y guarda un historial en pantalla.
+2. **El front.** El asesor virtual "Pancho" de PROSEBA automotores, con estilo oscuro tipo Ferrari (fondo casi negro, rojo solo como acento, esquinas rectas). Tiene un header grande con el auto que se afina a una sola línea al hacer scroll, el chat con el avatar de Pancho, un indicador "escribiendo…" mientras espera, y guarda el historial en pantalla. En cada respuesta hay un desplegable **"Ver los documentos consultados"** con los fragmentos que trajo la búsqueda: su similitud, una barra con la raya roja del umbral, si fue *usado* o *descartado por el umbral*, y el texto. En el lateral están las **"Preguntas para probar"** (se tocan y se envían solas) y "Cómo responde Pancho". Cuando no hay dato, sale un globo ámbar con el sello **"No figura en los documentos"** y la mejor similitud encontrada.
 3. **Pregunta que funciona:** *"¿Cuánto necesito de anticipo para financiar un auto?"* → 30% mínimo, fuente `financiacion.md — Planes de financiación propia` (similitud 0,646; en la pantalla a veces "Anticipo y cuotas" queda apenas primero, 0,64, y "Planes de financiación propia" segundo: las dos están en los 3 resultados y el modelo cita la correcta). **Abrir el documento en esa sección y mostrar que dice lo mismo.**
-4. **Pregunta que no está:** *"¿Quién ganó el último mundial?"* → similitud 0,247, muy debajo del umbral. Contesta "No lo encuentro en los documentos." **sin llamar al modelo.**
+4. **Pregunta que no está:** *"¿Quién ganó el último mundial?"* → similitud 0,247, muy debajo del umbral. En pantalla sale el globo ámbar "No figura en los documentos" con la nota "Ningún documento llegó al umbral (0.5)…", **sin llamar al modelo.** Abrir "Ver los documentos consultados" y mostrar la similitud contra la raya del umbral.
 5. **Pregunta que falla (en el límite):** *"¿Cuánto cuesta el service de la Vela 1.6?"*
    - La **búsqueda falló a medias**: trajo el modelo Vela 1.6 (0,70), la de mantenimiento programado (0,525) y la de reserva (0,523), todas por encima del umbral, pero ninguna tiene el precio puntual.
    - Lo salvó el **modelo**: el prompt le exige usar solo los fragmentos y decir "No lo encuentro" si no está, y en general lo hace, en vez de inventar un número. Ojo: el modelo no es 100% determinista; a veces, en vez de "No lo encuentro", contesta solo lo que sí dice el documento (el primer service es gratis y el costo depende del modelo) **sin inventar ningún precio**. Las dos respuestas son aceptables: lo importante es que nunca da un número inventado.
@@ -25,6 +25,9 @@ Para estudiar, no para leer en voz alta: la idea es que lo digas con tus palabra
 - **Lo que probé y descarté / cambié:** al cambiar el corpus del club por el de la concesionaria tuve que recalibrar el umbral desde cero: el 0,58 que había medido para el club no servía (habría descartado la pregunta de la Travesía, que sí está). El modelo de chat (`gemini-3.5-flash`) y el de embeddings (`bge-m3`) no cambiaron.
 
 ## 3. Preguntas sobre mi sistema
+
+**¿Qué muestra el front y de dónde saca los datos?**
+El navegador solo manda la pregunta a `POST /preguntar`. El servidor (`servidor.mjs`) devuelve `respuesta`, `llamoAlModelo`, `umbral` y la lista de `fragmentos` (etiqueta, similitud, si fue útil y el texto). El front dibuja con eso las fuentes, la barra de similitud y la raya del umbral. `GET /estado` dice si la base y Ollama están vivos (el punto "En línea"). No hay lógica de RAG en el front: todo se decide en el servidor.
 
 **¿Qué corre en mi compu y qué en la nube? ¿Por qué?**
 En mi compu: Postgres con pgvector (en Docker), el modelo de embeddings bge-m3 (en Ollama) y el servidor Node. En la nube: solo el modelo que escribe la respuesta (Gemini de Google). Un modelo de embeddings lee el texto una sola vez y corre en cualquier compu; un modelo de chat genera token por token y necesita mucho más hardware. Además indexar hace muchos pedidos (uno por lote) y así no gasto el cupo gratuito de Google.
@@ -79,9 +82,10 @@ Los tres, en capas. El **umbral** corta antes de llamar al modelo si nada se par
 - [ ] Ollama abierto
 - [ ] `.env` con la clave de Google y conexión a internet
 - [ ] `node --env-file=.env servidor.mjs` y http://localhost:3000 probado esa mañana
-- [ ] Mis tres preguntas anotadas: anticipo para financiar / mundial / service de la Vela 1.6
+- [ ] Mis tres preguntas anotadas (están en "Preguntas para probar" del lateral): anticipo para financiar / mundial / service de la Vela 1.6
 - [ ] `financiacion.md` abierto en "Planes de financiación propia" para mostrar la fuente
+- [ ] En el chat, abrir "Ver los documentos consultados" para mostrar similitud y umbral
 - [ ] Plan B: capturas o video corto
 - [ ] Fichas 1 a 5 completas a mano
 
-Si Google da error 503 ("alta demanda"), reintentar. Si persiste, `MODELO_CHAT` en `.env` se puede cambiar por otro modelo disponible.
+Si Google da error 503 ("alta demanda") o 429 (cupo agotado), reintentar con el botón "Reintentar" del chat. Si persiste, cambiar `MODELO_CHAT` en `.env` por otro modelo disponible (por ejemplo `gemini-flash-lite-latest`) y reiniciar el servidor. El modelo de chat puede variar entre el original (`gemini-3.5-flash`) y el que esté en uso en `.env`: las respuestas cambian un poco de redacción, pero los fragmentos y las similitudes son los mismos.

@@ -72,7 +72,7 @@ Cada fragmento tiene:
 | Campo | Descripción |
 |---|---|
 | `fuente` | De qué archivo viene (ej: `financiacion.md`) |
-| `seccion` | El título de la sección (ej: `Crédito UVA`) |
+| `seccion` | El título de la sección (ej: `Planes de financiación propia`) |
 | `posicion` | Número de orden dentro del archivo |
 | `texto` | El contenido del fragmento |
 
@@ -87,7 +87,7 @@ Acá ocurre la "magia". Cada fragmento de texto se convierte en un **vector de n
 El modelo que hace esto se llama **`bge-m3`** y corre localmente en tu máquina con **Ollama**. Genera **1024 números** (dimensiones) por cada fragmento.
 
 ```
-"El crédito UVA se ajusta por inflación..." 
+"PROSEBA automotores financia directamente hasta el 70%..." 
          ↓  (bge-m3 en Ollama)
 [ 0.023, -0.187, 0.441, 0.009, ... ]  ← 1024 números
 ```
@@ -108,7 +108,7 @@ También se crea un **índice HNSW** sobre los vectores, que es una estructura q
 -- Así se ve una fila en la tabla:
 id | fuente              | seccion     | posicion | texto           | embedding
 ---+---------------------+-------------+----------+-----------------+-----------
- 1 | financiacion.md     | Crédito UVA |    0     | "El crédito..." | [0.023, -0.187, ...]
+ 1 | financiacion.md     | Planes de financiación propia |    0     | "PROSEBA automotores financia..." | [0.023, -0.187, ...]
 ```
 
 ---
@@ -120,7 +120,7 @@ id | fuente              | seccion     | posicion | texto           | embedding
 Cuando el usuario escribe una pregunta, **se le aplica el mismo proceso de embedding** que a los fragmentos.
 
 ```
-"¿Tienen financiación en cuotas fijas?"
+"¿Cuánto necesito de anticipo para financiar un auto?"
          ↓  (bge-m3 en Ollama)
 [ 0.019, -0.201, 0.438, ... ]  ← 1024 números
 ```
@@ -169,11 +169,11 @@ Respondé usando EXCLUSIVAMENTE los fragmentos que aparecen más abajo.
 Si los fragmentos no contienen la respuesta, respondé exactamente: "No lo encuentro en los documentos."
 
 FRAGMENTOS:
---- financiacion.md — Crédito UVA ---
-El crédito UVA se ajusta por inflación...
+--- financiacion.md — Planes de financiación propia ---
+PROSEBA automotores financia directamente hasta el 70% del valor del vehículo...
 
 PREGUNTA:
-¿Tienen financiación en cuotas fijas?
+¿Cuánto necesito de anticipo para financiar un auto?
 ```
 
 ---
@@ -184,9 +184,22 @@ El prompt completo se manda a **Gemini** (modelo de Google) vía API. Gemini gen
 
 ```
 Pancho responde:
-"Sí, contamos con el crédito UVA que se ajusta por inflación y tiene cuotas iniciales bajas.
-Fuente: financiacion.md — Crédito UVA"
+"Necesitás un anticipo mínimo del 30% para acceder al plan propio.
+Fuente: financiacion.md — Planes de financiación propia"
 ```
+
+---
+
+### Paso 10 — Lo que ve el usuario (`public/index.html`)
+
+El navegador solo manda la pregunta a `POST /preguntar`. El servidor devuelve la respuesta, si llamó o no al modelo, el umbral y la lista de fragmentos con su similitud. El front muestra:
+
+- La respuesta de Pancho, con la hora y los chips de **fuente** (`Fuente: archivo — sección`).
+- Si ningún fragmento llegó al umbral (o el modelo no encontró el dato): un globo ámbar con el sello **"No figura en los documentos"** y una nota con la mejor similitud (ej.: "Ningún documento llegó al umbral (0.5); el más parecido llegó a 0.486").
+- Un desplegable **"Ver los documentos consultados"**: para cada fragmento, si fue *usado* o *descartado por el umbral*, su similitud, una barra con la raya roja del umbral y el texto completo. Es lo que se usa en la exposición para mostrar cómo decide el sistema.
+- En el lateral, **"Preguntas para probar"** (se tocan y se envían) y **"Cómo responde Pancho"**.
+
+La clave de Google nunca llega al navegador: queda en `.env` y la usa el servidor.
 
 ---
 
@@ -196,7 +209,7 @@ Fuente: financiacion.md — Crédito UVA"
 |---|---|
 | `corpus/` | Los documentos fuente de conocimiento |
 | `trocear.mjs` | Parte los documentos en fragmentos |
-| `marca.mjs` | Define qué patrón de texto marca el inicio de un fragmento (títulos `##`) |
+| `marca.mjs` | Define qué patrón de texto marca el inicio de un fragmento (títulos `#`, `##` y `###`) |
 | `api.mjs` | Llama a Ollama (embeddings) y a Google (respuesta) |
 | `db.mjs` | Conexión a Postgres |
 | `crear-tabla.mjs` | Crea la tabla `fragmentos` y el índice HNSW en la base |
@@ -204,7 +217,8 @@ Fuente: financiacion.md — Crédito UVA"
 | `buscar.mjs` | Hace la búsqueda vectorial en SQL |
 | `rag.mjs` | Orquesta todo: embedding → búsqueda → umbral → prompt → respuesta |
 | `prompt.txt` | Plantilla del prompt con el personaje Pancho |
-| `servidor.mjs` | Servidor web que sirve el chat en http://localhost:3000 |
+| `servidor.mjs` | Servidor web: sirve el chat en http://localhost:3000 y expone `/estado` y `/preguntar` |
+| `public/index.html` | El front: una sola página (HTML, CSS y JS) con el chat de Pancho |
 | `preguntar.mjs` | Versión de consola para hacer preguntas sin el front |
 | `distribucion.mjs` | Ayuda a elegir el umbral correcto |
 
