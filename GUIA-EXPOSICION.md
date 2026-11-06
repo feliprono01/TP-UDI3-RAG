@@ -76,7 +76,44 @@ Los tres, en capas. El **umbral** corta antes de llamar al modelo si nada se par
 3. **Actualización incremental:** reindexar solo los documentos que cambiaron, no todo.
 4. **Medición formal:** un conjunto grande de preguntas con su respuesta correcta para medir el porcentaje de aciertos (yo medí 16).
 
-## 5. Antes de que te toque (checklist)
+## 5. Cómo iniciar y apagar todo a mano
+
+**Iniciar (en este orden)**
+
+1. **Docker Desktop:** abrirlo y esperar a que termine de arrancar.
+2. **La base:** en cualquier terminal (PowerShell, CMD, Git Bash o la de VS Code; no importa la carpeta):
+   ```
+   docker start rag-db
+   ```
+   Comprobar con `docker ps`: tiene que aparecer `rag-db` con el puerto 5433. Si dice "No such container", el contenedor no existe y hay que crearlo de nuevo (ver `GUIA-MUDANZA-Y-CAMBIO-DE-TEMA.md`).
+3. **Ollama:** abrir la app (calcula los embeddings con `bge-m3`).
+4. **El servidor:** en una terminal parada en la carpeta del proyecto:
+   ```
+   cd C:\Users\Usuario\OneDrive\Desktop\rag-propio
+   node --env-file=.env servidor.mjs
+   ```
+   Dejar esa terminal abierta: si se cierra, se apaga el chat.
+5. **El navegador:** abrir http://localhost:3000. Arriba tiene que decir **"En línea"**.
+
+**Si algo falla**
+
+| Síntoma | Causa probable | Qué hacer |
+|---|---|---|
+| "Sin conexión" en el chat | Falta Docker (la base) u Ollama | Repetir los pasos 1 a 3 y recargar |
+| `ECONNREFUSED 127.0.0.1:5433` | La base no está corriendo | `docker start rag-db` |
+| "cannot connect to the Docker daemon" | Docker Desktop no terminó de abrir | Esperar y reintentar |
+| El panel dice que el catálogo está vacío | La base no tiene fragmentos | `node --env-file=.env indexar.mjs` |
+| Error 429 o 503 al preguntar | Cupo agotado o Google saturado | "Reintentar" en el chat; si sigue, cambiar `MODELO_CHAT` en `.env` y reiniciar el servidor |
+
+**Probar sin el navegador:** `node --env-file=.env preguntar.mjs "tu pregunta"`. Con `--sin-modelo` se ve solo la búsqueda, sin llamar a Gemini.
+
+**Apagar**
+
+1. `Ctrl + C` en la terminal del servidor.
+2. `docker stop rag-db`.
+3. Cerrar Ollama y Docker Desktop.
+
+## 6. Antes de que te toque (checklist)
 
 - [ ] Docker Desktop abierto y `docker start rag-db`
 - [ ] Ollama abierto
